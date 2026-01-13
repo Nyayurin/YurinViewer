@@ -25,13 +25,13 @@ jobs:
       uses: 'gradle/actions/setup-gradle@v4'
     - id: 'step-3'
       run: |-
+        chmod +x ./gradlew
         ./gradlew :generateComposeResClass
         ./gradlew :generateResourceAccessorsForComposeMain
         ./gradlew :generateExpectResourceCollectorsForCommonMain
         ./gradlew :generateActualResourceCollectorsForComposeJvmMain
         ./gradlew :assembleComposeJvmMainResources
-        sed -i 's/Windows/Windows/g' source@compose/main/kotlin/core/PreConfiguration.kt
-        sed -i 's/Amd64/Amd64/g' source@compose/main/kotlin/core/PreConfiguration.kt
+        ./gradlew :generateKotlinGrammarSource
     - id: 'step-4'
       name: 'package windows-uberjar-amd64'
       run: './gradlew :packageReleaseUberJarForCurrentOS'
@@ -81,13 +81,13 @@ jobs:
       uses: 'gradle/actions/setup-gradle@v4'
     - id: 'step-3'
       run: |-
+        chmod +x ./gradlew
         ./gradlew :generateComposeResClass
         ./gradlew :generateResourceAccessorsForComposeMain
         ./gradlew :generateExpectResourceCollectorsForCommonMain
         ./gradlew :generateActualResourceCollectorsForComposeJvmMain
         ./gradlew :assembleComposeJvmMainResources
-        sed -i 's/Windows/Windows/g' source@compose/main/kotlin/core/PreConfiguration.kt
-        sed -i 's/Amd64/Aarch64/g' source@compose/main/kotlin/core/PreConfiguration.kt
+        ./gradlew :generateKotlinGrammarSource
     - id: 'step-4'
       name: 'package windows-uberjar-aarch64'
       run: './gradlew :packageReleaseUberJarForCurrentOS'
@@ -137,13 +137,13 @@ jobs:
       uses: 'gradle/actions/setup-gradle@v4'
     - id: 'step-3'
       run: |-
+        chmod +x ./gradlew
         ./gradlew :generateComposeResClass
         ./gradlew :generateResourceAccessorsForComposeMain
         ./gradlew :generateExpectResourceCollectorsForCommonMain
         ./gradlew :generateActualResourceCollectorsForComposeJvmMain
         ./gradlew :assembleComposeJvmMainResources
-        sed -i 's/Windows/Linux/g' source@compose/main/kotlin/core/PreConfiguration.kt
-        sed -i 's/Amd64/Amd64/g' source@compose/main/kotlin/core/PreConfiguration.kt
+        ./gradlew :generateKotlinGrammarSource
     - id: 'step-4'
       name: 'package linux-uberjar-amd64'
       run: './gradlew :packageReleaseUberJarForCurrentOS'
@@ -193,13 +193,13 @@ jobs:
       uses: 'gradle/actions/setup-gradle@v4'
     - id: 'step-3'
       run: |-
+        chmod +x ./gradlew
         ./gradlew :generateComposeResClass
         ./gradlew :generateResourceAccessorsForComposeMain
         ./gradlew :generateExpectResourceCollectorsForCommonMain
         ./gradlew :generateActualResourceCollectorsForComposeJvmMain
         ./gradlew :assembleComposeJvmMainResources
-        sed -i 's/Windows/Linux/g' source@compose/main/kotlin/core/PreConfiguration.kt
-        sed -i 's/Amd64/Aarch64/g' source@compose/main/kotlin/core/PreConfiguration.kt
+        ./gradlew :generateKotlinGrammarSource
     - id: 'step-4'
       name: 'package linux-uberjar-aarch64'
       run: './gradlew :packageReleaseUberJarForCurrentOS'
@@ -249,13 +249,13 @@ jobs:
       uses: 'gradle/actions/setup-gradle@v4'
     - id: 'step-3'
       run: |-
+        chmod +x ./gradlew
         ./gradlew :generateComposeResClass
         ./gradlew :generateResourceAccessorsForComposeMain
         ./gradlew :generateExpectResourceCollectorsForCommonMain
         ./gradlew :generateActualResourceCollectorsForComposeJvmMain
         ./gradlew :assembleComposeJvmMainResources
-        sed -i '' 's/Windows/Macos/g' source@compose/main/kotlin/core/PreConfiguration.kt
-        sed -i '' 's/Amd64/Aarch64/g' source@compose/main/kotlin/core/PreConfiguration.kt
+        ./gradlew :generateKotlinGrammarSource
     - id: 'step-4'
       name: 'package macos-uberjar-aarch64'
       run: './gradlew :packageReleaseUberJarForCurrentOS'

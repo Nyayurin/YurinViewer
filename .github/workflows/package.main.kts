@@ -135,6 +135,7 @@ fun WorkflowBuilder.publish(runsOn: RunnerType, system: String, arch: String, pu
 		)
 		run(
 			command = """
+				chmod +x ./gradlew
 				./gradlew :generateComposeResClass
 				./gradlew :generateResourceAccessorsForComposeMain
 				./gradlew :generateExpectResourceCollectorsForCommonMain
