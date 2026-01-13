@@ -1,0 +1,8 @@
+.gradle
+build/
+.idea
+.kotlin
+local.properties
+APT.jks
+cache
+destination
