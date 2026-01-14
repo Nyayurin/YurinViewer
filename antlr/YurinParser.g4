@@ -37,11 +37,11 @@ traitDeclaration
   ;
 
 implDeclaration
-  : modifiers Impl Identifier Colon Identifier typeArguments? classBody?
+  : modifiers Impl Identifier Colon typeReference classBody?
   ;
 
 functionDeclaration
-  : modifiers Fun typeParameters? Identifier valueParameters (Colon typeReference)? ((Eq NL? expression) | block)?
+  : modifiers Fun typeParameters? Identifier valueParameters (Colon typeReference)? (block | (Eq NL? expression))?
   ;
 
 propertyDeclaration
@@ -49,15 +49,15 @@ propertyDeclaration
   ;
 
 inheritance
-  : Colon Identifier typeArguments?
+  : Colon typeReference
   ;
 
 propertyGetter
-  : modifiers Get (valueParameters ((Eq NL? expression) | block))?
+  : modifiers Get (valueParameters (block | (Eq NL? expression)))?
   ;
 
 propertySetter
-  : modifiers Set (valueParameters ((Eq NL? expression) | block))?
+  : modifiers Set (valueParameters (block | (Eq NL? expression)))?
   ;
 
 typeAliasDeclaration
@@ -207,7 +207,6 @@ postfixUnaryExpression
 
 primaryExpression
   : parenthesizedExpression
-  | Identifier
   | literal
   | callableReference
   | functionLiteral
@@ -219,6 +218,7 @@ primaryExpression
   | jumpExpression
   | functionCall
   | propertyCall
+  | Identifier
   ;
 
 parenthesizedExpression
@@ -247,7 +247,7 @@ thisExpression
   ;
 
 ifExpression
-  : If LeftParen expression RightParen (expression | block) (Else (expression | block))?
+  : If LeftParen expression RightParen (block | expression) (Else (block | expression))?
   ;
 
 matchExpression
@@ -265,8 +265,8 @@ matchSubject
   ;
 
 matchEntry
-  : matchCondition Arrow (expression | block)
-  | Else Arrow (expression | block)
+  : matchCondition Arrow (block | expression)
+  | Else Arrow (block | expression)
   ;
 
 matchCondition
@@ -284,7 +284,7 @@ typeTest
   ;
 
 anonymousFunction
-  : Fun typeParameters? valueParameters (Colon typeReference)? ((Eq NL? expression) | block)
+  : Fun typeParameters? valueParameters (Colon typeReference)? (block | (Eq NL? expression))
   ;
 
 postfixUnarySuffix

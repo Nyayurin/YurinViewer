@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.layer.GraphicsLayer
@@ -25,6 +26,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import cn.yurin.languege.viewer.theme.Theme
 import io.github.vinceglb.filekit.core.FileKit
 import io.github.vinceglb.filekit.core.PickerMode
@@ -39,7 +42,7 @@ fun App() {
 	val scope = rememberCoroutineScope()
 	Theme {
 		Surface(
-			color = MaterialTheme.colorScheme.background,
+			color = Color(0xFF282c34),
 			modifier = Modifier.fillMaxSize(),
 		) {
 			Column {
@@ -90,6 +93,8 @@ fun App() {
 					SelectionContainer {
 						Text(
 							text = code,
+							fontSize = 14.sp,
+							lineHeight = 1.5.em,
 							modifier = Modifier
 								.verticalScroll(rememberScrollState())
 								.horizontalScroll(rememberScrollState())
@@ -102,7 +107,7 @@ fun App() {
 									}
 								}
 								.drawToLayer(layer, dpSize)
-								.background(MaterialTheme.colorScheme.background)
+								.background(Color(0xFF282c34))
 								.padding(16.dp),
 						)
 					}
