@@ -29,11 +29,11 @@ classDeclaration
   ;
 
 objectDeclaration
-  : modifiers Object Identifier classBody?
+  : modifiers Object Identifier inheritance? classBody?
   ;
 
 traitDeclaration
-  : modifiers Trait Identifier typeParameters? classBody?
+  : modifiers Trait Identifier typeParameters? inheritance? classBody?
   ;
 
 implDeclaration
@@ -41,15 +41,19 @@ implDeclaration
   ;
 
 functionDeclaration
-  : modifiers Fun typeParameters? Identifier valueParameters (Colon typeReference)? (block | (Eq NL? expression))?
+  : modifiers Fun typeParameters? Identifier valueParameters (Colon existTypeReference)? (block | (Eq NL? expression))?
   ;
 
 propertyDeclaration
-  : modifiers (Var | Val) Identifier (Colon typeReference)? (Eq NL? expression)? (NL propertyGetter)? (NL propertySetter)?
+  : modifiers (Var | Val) Identifier (Colon existTypeReference)? (Eq NL? expression)? (NL propertyGetter)? (NL propertySetter)?
+  ;
+
+typeAliasDeclaration
+  : modifiers Typealias Identifier typeParameters? Eq existTypeReference
   ;
 
 inheritance
-  : Colon typeReference
+  : Colon existTypeReference
   ;
 
 propertyGetter
@@ -58,10 +62,6 @@ propertyGetter
 
 propertySetter
   : modifiers Set (valueParameters (block | (Eq NL? expression)))?
-  ;
-
-typeAliasDeclaration
-  : modifiers Typealias Identifier typeParameters? Eq typeReference typeParameters?
   ;
 
 modifiers
@@ -91,15 +91,7 @@ typeArguments
   ;
 
 typeArgument
-  : typeReference
-  ;
-
-valueArguments
-  : LeftParen (valueArgument Comma)* valueArgument RightParen
-  ;
-
-valueArgument
-  : expression
+  : existTypeReference
   ;
 
 primaryConstructorValueParameters
@@ -113,6 +105,11 @@ primaryConstructorSingleLineValueParameters
 
 primaryConstructorMultiLineValueParameters
   : LeftParen NL ((Var | Val)? valueParameter Comma? NL)* ((Var | Val)? valueParameter)? Comma? NL RightParen
+  ;
+
+lambdaValueParameters
+  : singleLineValueParameters
+  | multiLineValueParameters
   ;
 
 valueParameters
@@ -129,11 +126,23 @@ multiLineValueParameters
   ;
 
 valueParameter
-  : Identifier Colon typeReference
+  : Identifier Colon existTypeReference
+  ;
+
+valueArguments
+  : LeftParen (valueArgument Comma)* valueArgument RightParen
+  ;
+
+valueArgument
+  : expression
+  ;
+
+existTypeReference
+  : Exist? typeReference
   ;
 
 typeReference
-  : Exist? (Identifier Dot)* Identifier typeArguments?
+  : (Identifier Dot)* Identifier typeArguments? Nullable?
   ;
 
 block
@@ -170,7 +179,7 @@ genericCallLikeComparison
   ;
 
 infixOperation
-  : elvisExpression (((In | NotIn) elvisExpression) | ((Is | NotIs) typeReference))*
+  : elvisExpression (((In | NotIn) elvisExpression) | ((Is | NotIs) existTypeReference))*
   ;
 
 elvisExpression
@@ -194,7 +203,7 @@ multiplicativeExpression
   ;
 
 asExpression
-  : prefixUnaryExpression ((As | SafeAs) typeReference)?
+  : prefixUnaryExpression ((As | SafeAs) existTypeReference)?
   ;
 
 prefixUnaryExpression
@@ -207,7 +216,6 @@ postfixUnaryExpression
 
 primaryExpression
   : parenthesizedExpression
-  | literal
   | callableReference
   | functionLiteral
   | objectLiteral
@@ -219,6 +227,7 @@ primaryExpression
   | functionCall
   | propertyCall
   | Identifier
+  | literal
   ;
 
 parenthesizedExpression
@@ -226,7 +235,7 @@ parenthesizedExpression
   ;
 
 callableReference
-  : (Identifier Dot)* Identifier Reference (Identifier | Class | parenthesizedExpression)
+  : typeReference Reference (Identifier | Class | parenthesizedExpression)
   ;
 
 functionLiteral
@@ -280,11 +289,11 @@ rangeTest
   ;
 
 typeTest
-  : (Is | NotIs) typeReference
+  : (Is | NotIs) existTypeReference
   ;
 
 anonymousFunction
-  : Fun typeParameters? valueParameters (Colon typeReference)? (block | (Eq NL? expression))
+  : Fun typeParameters? valueParameters (Colon existTypeReference)? (block | (Eq NL? expression))
   ;
 
 postfixUnarySuffix
@@ -303,13 +312,8 @@ lambdaLiteral
   : LeftBracket NL* (lambdaValueParameters Arrow NL*)? (statement NL*)* statement? NL* RightBracket
   ;
 
-lambdaValueParameters
-  : singleLineValueParameters
-  | multiLineValueParameters
-  ;
-
 functionCall
-  : (Identifier Dot)* Identifier LeftParen NL* (expression Comma NL*)* expression? Comma? NL* RightParen
+  : typeReference LeftParen NL* (expression Comma NL*)* expression? Comma? NL* RightParen
   ;
 
 propertyCall

@@ -230,6 +230,10 @@ Not
   : '!'
   ;
 
+Nullable
+  : '?'
+  ;
+
 Reference
   : '::'
   ;

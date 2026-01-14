@@ -5,9 +5,9 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
-	kotlin("multiplatform") version "2.2.10"
-	id("org.jetbrains.kotlin.plugin.compose") version "2.2.10"
-	id("org.jetbrains.compose") version "1.8.2"
+	kotlin("multiplatform") version "2.3.0"
+	id("org.jetbrains.kotlin.plugin.compose") version "2.3.0"
+	id("org.jetbrains.compose") version "1.10.0"
 	id("com.strumenta.antlr-kotlin") version "1.0.9"
 }
 
@@ -51,14 +51,13 @@ kotlin {
 		}
 
 		commonMain.dependencies {
-			implementation(compose.runtime)
-			implementation(compose.ui)
-			implementation(compose.foundation)
-			implementation(compose.material3)
-			implementation(compose.components.resources)
+			implementation("org.jetbrains.compose.runtime:runtime:1.10.0")
+			implementation("org.jetbrains.compose.ui:ui:1.10.0")
+			implementation("org.jetbrains.compose.foundation:foundation:1.10.0")
+			implementation("org.jetbrains.compose.material3:material3:1.10.0-alpha05")
+			implementation("org.jetbrains.compose.components:components-resources:1.10.0")
 
 			implementation("io.github.vinceglb:filekit-compose:0.8.8")
-			implementation("dev.snipme:highlights:1.1.0")
 			implementation ("com.strumenta:antlr-kotlin-runtime:1.0.9")
 		}
 
