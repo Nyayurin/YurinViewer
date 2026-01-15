@@ -1,7 +1,11 @@
 package cn.yurin.languege.viewer
 
+import androidx.compose.ui.text.AnnotatedString
+import cn.yurin.languege.viewer.Highlight.DataDeclaration
+import cn.yurin.languege.viewer.Highlight.TraitDeclaration
 import com.yurin.antlrkotlin.parsers.generated.YurinParser
 import com.yurin.antlrkotlin.parsers.generated.YurinParserBaseListener
+import com.yurin.antlrkotlin.parsers.generated.YurinParserBaseVisitor
 
 class DeclarationCollectListener : YurinParserBaseListener() {
 	private val dataIdentifiers = mutableListOf<Pair<String, String>>()
@@ -52,4 +56,52 @@ class DeclarationCollectListener : YurinParserBaseListener() {
 
 	val traitTypeIdentifiers: List<Pair<String, String>>
 		get() = traitIdentifiers.toList()
+}
+
+class SemanticHighlightVisitor(
+	private val builder: AnnotatedString.Builder,
+	private val collectListener: DeclarationCollectListener,
+) : YurinParserBaseVisitor<Unit>() {
+	private lateinit var currentPackage: String
+
+	val currentPackageDataIdentifiers by lazy {
+		collectListener.dataTypeIdentifiers
+			.filter { it.first == currentPackage }
+			.map { it.second }
+	}
+
+	val currentPackageTraitIdentifiers by lazy {
+		collectListener.traitTypeIdentifiers
+			.filter { it.first == currentPackage }
+			.map { it.second }
+	}
+
+	val packagedDataIdentifiers = collectListener.dataTypeIdentifiers.map { it.first + "." + it.second }
+	val packagedTraitIdentifiers = collectListener.traitTypeIdentifiers.map { it.first + "." + it.second }
+
+	override fun visitYurinFile(ctx: YurinParser.YurinFileContext) {
+		currentPackage = ctx.packageHeader()?.Identifier()?.joinToString(".") ?: ""
+		super.visitYurinFile(ctx)
+	}
+
+	override fun visitTypeIdentifier(ctx: YurinParser.TypeIdentifierContext) {
+		var identifier = ""
+		ctx.Identifier().forEach { node ->
+			if (identifier.isNotEmpty()) {
+				identifier += "."
+			}
+			identifier += node.text
+			when (identifier) {
+				in currentPackageDataIdentifiers,
+				in packagedDataIdentifiers,
+					-> builder.highlightToken(node.symbol, DataDeclaration)
+
+				in currentPackageTraitIdentifiers,
+				in packagedTraitIdentifiers,
+					-> builder.highlightToken(node.symbol, TraitDeclaration)
+			}
+		}
+	}
+
+	override fun defaultResult() {}
 }

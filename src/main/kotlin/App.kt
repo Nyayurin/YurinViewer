@@ -43,16 +43,16 @@ fun App() {
 				val layer = rememberGraphicsLayer()
 				var dpSize by remember { mutableStateOf(IntSize.Zero) }
 				val density = LocalDensity.current
+				var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 				var code by remember { mutableStateOf("") }
 				var file by remember { mutableStateOf<PlatformFile?>(null) }
 				val errors = remember(code) { getErrors(code) }
-				var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 				Row(
 					horizontalArrangement = Arrangement.spacedBy(8.dp),
 					modifier = Modifier
 						.fillMaxWidth()
 						.background(MaterialTheme.colorScheme.surfaceContainer)
-						.padding(8.dp)
+						.padding(8.dp),
 				) {
 					Button(
 						onClick = {
@@ -77,7 +77,7 @@ fun App() {
 									?: FileKit.saveFile(
 										bytes = code.toByteArray(Charsets.UTF_8),
 										baseName = file?.baseName ?: "",
-										extension = "yurin"
+										extension = "yurin",
 									)?.let {
 										file = it
 									}
@@ -92,7 +92,7 @@ fun App() {
 								FileKit.saveFile(
 									bytes = code.toByteArray(Charsets.UTF_8),
 									baseName = file?.baseName ?: "",
-									extension = "yurin"
+									extension = "yurin",
 								)?.let {
 									file = it
 								}
@@ -109,7 +109,7 @@ fun App() {
 								FileKit.saveFile(
 									bytes = byteArray,
 									baseName = "output",
-									extension = "png"
+									extension = "png",
 								)
 							}
 						},
@@ -166,7 +166,7 @@ fun App() {
 										color = Color.Red,
 										start = Offset(startRect.left, y),
 										end = Offset(endRect.right, y),
-										strokeWidth = 1.dp.toPx()
+										strokeWidth = 1.dp.toPx(),
 									)
 								}
 							}
@@ -177,7 +177,7 @@ fun App() {
 						modifier = Modifier
 							.fillMaxWidth()
 							.heightIn(max = 200.dp)
-							.background(Color(0xFF21252B))
+							.background(Color(0xFF21252B)),
 					) {
 						items(errors) { error ->
 							Text(

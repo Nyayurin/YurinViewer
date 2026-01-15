@@ -1,8 +1,5 @@
-@file:OptIn(ExperimentalWasmDsl::class)
-
 import com.strumenta.antlrkotlin.gradle.AntlrKotlinTask
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
 	kotlin("multiplatform") version "2.3.0"
@@ -58,7 +55,7 @@ kotlin {
 			implementation("org.jetbrains.compose.components:components-resources:1.10.0")
 
 			implementation("io.github.vinceglb:filekit-compose:0.8.8")
-			implementation ("com.strumenta:antlr-kotlin-runtime:1.0.9")
+			implementation("com.strumenta:antlr-kotlin-runtime:1.0.9")
 		}
 
 		jvmMain.dependencies {
