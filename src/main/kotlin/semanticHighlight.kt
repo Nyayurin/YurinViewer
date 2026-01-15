@@ -1,8 +1,5 @@
 package cn.yurin.languege.viewer
 
-import androidx.compose.ui.text.AnnotatedString
-import cn.yurin.languege.viewer.Highlight.DataDeclaration
-import cn.yurin.languege.viewer.Highlight.TraitDeclaration
 import com.yurin.antlrkotlin.parsers.generated.YurinParser
 import com.yurin.antlrkotlin.parsers.generated.YurinParserBaseListener
 import com.yurin.antlrkotlin.parsers.generated.YurinParserBaseVisitor
@@ -59,9 +56,9 @@ class DeclarationCollectListener : YurinParserBaseListener() {
 }
 
 class SemanticHighlightVisitor(
-	private val builder: AnnotatedString.Builder,
 	private val collectListener: DeclarationCollectListener,
 ) : YurinParserBaseVisitor<Unit>() {
+	private val highlights = mutableListOf<Highlight>()
 	private lateinit var currentPackage: String
 
 	val currentPackageDataIdentifiers by lazy {
@@ -94,14 +91,22 @@ class SemanticHighlightVisitor(
 			when (identifier) {
 				in currentPackageDataIdentifiers,
 				in packagedDataIdentifiers,
-					-> builder.highlightToken(node.symbol, DataDeclaration)
+					-> highlights.addIfNotNull(node.symbol.toHighlight(YurinHighlightStyle.dataDeclaration))
 
 				in currentPackageTraitIdentifiers,
 				in packagedTraitIdentifiers,
-					-> builder.highlightToken(node.symbol, TraitDeclaration)
+					-> highlights.addIfNotNull(node.symbol.toHighlight(YurinHighlightStyle.traitDeclaration))
 			}
 		}
 	}
 
 	override fun defaultResult() {}
+
+	fun build() = highlights.toList()
+
+	private fun <T> MutableList<T>.addIfNotNull(element: T?) {
+		if (element != null) {
+			add(element)
+		}
+	}
 }

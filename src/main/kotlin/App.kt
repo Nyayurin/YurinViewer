@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -44,9 +45,17 @@ fun App() {
 				var dpSize by remember { mutableStateOf(IntSize.Zero) }
 				val density = LocalDensity.current
 				var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
-				var code by remember { mutableStateOf("") }
+				var source by remember { mutableStateOf("") }
 				var file by remember { mutableStateOf<PlatformFile?>(null) }
-				val errors = remember(code) { getErrors(code) }
+				var highlights by remember { mutableStateOf(emptyList<Highlight>()) }
+				var errors by remember { mutableStateOf(emptyList<ErrorHighlightListener.Error>()) }
+				var annotatedSource by remember { mutableStateOf(AnnotatedString("")) }
+				remember(source) {
+					val (tempHighlights, tempErrors) = highlight(source)
+					highlights = tempHighlights
+					errors = tempErrors
+					annotatedSource = highlights.toAnnotatedString(source)
+				}
 				Row(
 					horizontalArrangement = Arrangement.spacedBy(8.dp),
 					modifier = Modifier
@@ -63,7 +72,7 @@ fun App() {
 								)
 								selectFile?.let {
 									file = it
-									code = it.readBytes().toString(Charsets.UTF_8)
+									source = it.readBytes().toString(Charsets.UTF_8)
 								}
 							}
 						},
@@ -73,9 +82,9 @@ fun App() {
 					Button(
 						onClick = {
 							scope.launch(Dispatchers.IO) {
-								file?.file?.writeText(code)
+								file?.file?.writeText(source)
 									?: FileKit.saveFile(
-										bytes = code.toByteArray(Charsets.UTF_8),
+										bytes = source.toByteArray(Charsets.UTF_8),
 										baseName = file?.baseName ?: "",
 										extension = "yurin",
 									)?.let {
@@ -90,7 +99,7 @@ fun App() {
 						onClick = {
 							scope.launch(Dispatchers.IO) {
 								FileKit.saveFile(
-									bytes = code.toByteArray(Charsets.UTF_8),
+									bytes = source.toByteArray(Charsets.UTF_8),
 									baseName = file?.baseName ?: "",
 									extension = "yurin",
 								)?.let {
@@ -118,14 +127,14 @@ fun App() {
 					}
 				}
 				BasicTextField(
-					value = code,
-					onValueChange = { code = it },
+					value = source,
+					onValueChange = { source = it },
 					textStyle = LocalTextStyle.current.merge(
 						color = Color(0xFFABB2BF),
 						fontSize = 14.sp,
 						lineHeight = 1.5.em,
 					),
-					visualTransformation = HighlightingTransformation,
+					visualTransformation = HighlightingTransformation(annotatedSource),
 					onTextLayout = { result ->
 						layoutResult = result
 						val lineCount = result.lineCount
@@ -155,17 +164,24 @@ fun App() {
 						.padding(16.dp)
 						.drawBehind {
 							layoutResult?.let { layoutResult ->
-								errors.forEach { (start, end) ->
-									val start = start.coerceIn(0, layoutResult.layoutInput.text.length - 1)
-									val end = (end - 1).coerceIn(start, layoutResult.layoutInput.text.length - 1)
-									val startRect = layoutResult.getBoundingBox(start)
-									val endRect = layoutResult.getBoundingBox(end)
+								val textLength = layoutResult.layoutInput.text.length
+								highlights.filter { it.style.underlineColor != null }.forEach { (start, end, style) ->
+									val safeStart = start.coerceIn(0, textLength - 1)
+									val safeEnd = (end - 2).coerceIn(safeStart, textLength - 1)
+
+									val startRect = layoutResult.getBoundingBox(safeStart)
+									val endRect = layoutResult.getBoundingBox(safeEnd)
+									val startCharLength = startRect.right - startRect.left
+									val endCharLength = endRect.right - endRect.left
+									val startOffset = start - safeStart
+									val endOffset = end - safeEnd - 1
+
 									val y = startRect.bottom + 2.dp.toPx()
 
 									drawLine(
-										color = Color.Red,
-										start = Offset(startRect.left, y),
-										end = Offset(endRect.right, y),
+										color = Color(style.underlineColor!!),
+										start = Offset(startRect.left + startCharLength * startOffset, y),
+										end = Offset(endRect.right + endCharLength * endOffset, y),
 										strokeWidth = 1.dp.toPx(),
 									)
 								}

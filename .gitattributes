@@ -1,0 +1,9 @@
+### Gradle ###
+gradlew linguist-vendored
+gradlew.bat linguist-vendored
+
+### Grammar ###
+antlr/* linguist-vendored
+
+### Workflow ###
+.github/workflows/* linguist-vendored

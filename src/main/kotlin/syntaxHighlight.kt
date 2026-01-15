@@ -1,14 +1,12 @@
 package cn.yurin.languege.viewer
 
-import androidx.compose.ui.text.AnnotatedString
-import cn.yurin.languege.viewer.Highlight.*
 import com.yurin.antlrkotlin.parsers.generated.YurinParser
 import com.yurin.antlrkotlin.parsers.generated.YurinParserBaseVisitor
 import org.antlr.v4.kotlinruntime.tree.TerminalNode
 
-class SyntaxHighlightingVisitor(
-	private val builder: AnnotatedString.Builder,
-) : YurinParserBaseVisitor<Unit>() {
+class SyntaxHighlightingVisitor : YurinParserBaseVisitor<Unit>() {
+	private val highlights = mutableListOf<Highlight>()
+
 	override fun visitYurinFile(ctx: YurinParser.YurinFileContext) {
 		super.visitYurinFile(ctx)
 	}
@@ -28,7 +26,7 @@ class SyntaxHighlightingVisitor(
 	override fun visitDataDeclaration(ctx: YurinParser.DataDeclarationContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
-				ctx.Identifier() -> builder.highlightToken((node as TerminalNode).symbol, DataDeclaration)
+				ctx.Identifier() -> highlights.addIfNotNull((node as TerminalNode).symbol.toHighlight(YurinHighlightStyle.dataDeclaration))
 				else -> node.accept(this)
 			}
 		}
@@ -37,7 +35,7 @@ class SyntaxHighlightingVisitor(
 	override fun visitTraitDeclaration(ctx: YurinParser.TraitDeclarationContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
-				ctx.Identifier() -> builder.highlightToken((node as TerminalNode).symbol, TraitDeclaration)
+				ctx.Identifier() -> highlights.addIfNotNull((node as TerminalNode).symbol.toHighlight(YurinHighlightStyle.traitDeclaration))
 				else -> node.accept(this)
 			}
 		}
@@ -50,7 +48,7 @@ class SyntaxHighlightingVisitor(
 	override fun visitFunctionDeclaration(ctx: YurinParser.FunctionDeclarationContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
-				ctx.Identifier() -> builder.highlightToken((node as TerminalNode).symbol, FunctionDeclaration)
+				ctx.Identifier() -> highlights.addIfNotNull((node as TerminalNode).symbol.toHighlight(YurinHighlightStyle.functionDeclaration))
 				else -> node.accept(this)
 			}
 		}
@@ -59,7 +57,7 @@ class SyntaxHighlightingVisitor(
 	override fun visitPropertyDeclaration(ctx: YurinParser.PropertyDeclarationContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
-				ctx.Identifier() -> builder.highlightToken((node as TerminalNode).symbol, PropertyDeclaration)
+				ctx.Identifier() -> highlights.addIfNotNull((node as TerminalNode).symbol.toHighlight(YurinHighlightStyle.propertyDeclaration))
 				else -> node.accept(this)
 			}
 		}
@@ -68,7 +66,7 @@ class SyntaxHighlightingVisitor(
 	override fun visitTypeAliasDeclaration(ctx: YurinParser.TypeAliasDeclarationContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
-				ctx.Identifier() -> builder.highlightToken((node as TerminalNode).symbol, DataDeclaration)
+				ctx.Identifier() -> highlights.addIfNotNull((node as TerminalNode).symbol.toHighlight(YurinHighlightStyle.dataDeclaration))
 				else -> node.accept(this)
 			}
 		}
@@ -153,7 +151,7 @@ class SyntaxHighlightingVisitor(
 	override fun visitValueParameter(ctx: YurinParser.ValueParameterContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
-				ctx.Identifier() -> builder.highlightToken((node as TerminalNode).symbol, PropertyDeclaration)
+				ctx.Identifier() -> highlights.addIfNotNull((node as TerminalNode).symbol.toHighlight(YurinHighlightStyle.propertyDeclaration))
 				else -> node.accept(this)
 			}
 		}
@@ -172,7 +170,7 @@ class SyntaxHighlightingVisitor(
 	}
 
 	override fun visitValueArgument(ctx: YurinParser.ValueArgumentContext) {
-		ctx.Identifier()?.symbol?.let { token -> builder.highlightToken(token, NamedValueArgument) }
+		ctx.Identifier()?.symbol?.let { token -> highlights.addIfNotNull(token.toHighlight(YurinHighlightStyle.namedValueArgument)) }
 		ctx.expression().accept(this)
 	}
 
@@ -234,7 +232,7 @@ class SyntaxHighlightingVisitor(
 		}
 
 		ctx.Identifier().forEach { node ->
-			builder.highlightToken(node.symbol, FunctionCall)
+			highlights.addIfNotNull(node.symbol.toHighlight(YurinHighlightStyle.functionCall))
 		}
 	}
 
@@ -351,4 +349,12 @@ class SyntaxHighlightingVisitor(
 	}
 
 	override fun defaultResult() {}
+
+	fun build() = highlights.toList()
+
+	private fun <T> MutableList<T>.addIfNotNull(element: T?) {
+		if (element != null) {
+			add(element)
+		}
+	}
 }
