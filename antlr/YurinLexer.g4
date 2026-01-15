@@ -10,12 +10,8 @@ Import
   : 'import'
   ;
 
-Class
-  : 'class'
-  ;
-
-Object
-  : 'object'
+Data
+  : 'data'
   ;
 
 Trait
@@ -42,6 +38,10 @@ Val
   : 'val'
   ;
 
+Ref
+  : 'Ref'
+  ;
+
 Get
   : 'get'
   ;
@@ -54,12 +54,32 @@ Typealias
   : 'typealias'
   ;
 
-Sealed
-  : 'sealed'
+Open
+  : 'open'
+  ;
+
+Abstract
+  : 'abstract'
   ;
 
 Operator
   : 'operator'
+  ;
+
+Singleton
+  : 'singleton'
+  ;
+
+Unsafe
+  : 'unsafe'
+  ;
+
+Nothing
+  : 'nothing'
+  ;
+
+Dynamic
+  : 'dynamic'
   ;
 
 LeftBracket
@@ -228,6 +248,10 @@ Decrement
 
 Not
   : '!'
+  ;
+
+UnsafeCast
+  : '!!'
   ;
 
 Nullable

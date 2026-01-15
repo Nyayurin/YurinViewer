@@ -7,16 +7,15 @@ yurinFile
   ;
 
 packageHeader
-  : Package Identifier
+  : Package (Identifier Dot)* Identifier
   ;
 
 importHeader
-  : Import Identifier
+  : Import (Identifier Dot)* Identifier
   ;
 
 declaration
-  : classDeclaration
-  | objectDeclaration
+  : dataDeclaration
   | traitDeclaration
   | implDeclaration
   | functionDeclaration
@@ -24,12 +23,8 @@ declaration
   | typeAliasDeclaration
   ;
 
-classDeclaration
-  : modifiers Class Identifier typeParameters? primaryConstructorValueParameters? inheritance? classBody?
-  ;
-
-objectDeclaration
-  : modifiers Object Identifier inheritance? classBody?
+dataDeclaration
+  : modifiers (Val | Ref) Data Identifier typeParameters? primaryConstructorValueParameters? inheritance? classBody?
   ;
 
 traitDeclaration
@@ -37,15 +32,15 @@ traitDeclaration
   ;
 
 implDeclaration
-  : modifiers Impl Identifier Colon typeReference classBody?
+  : modifiers Impl typeReference Colon typeReference classBody?
   ;
 
 functionDeclaration
-  : modifiers Fun typeParameters? Identifier valueParameters (Colon existTypeReference)? (block | (Eq NL? expression))?
+  : modifiers Fun typeParameters? (existTypeReference Dot)? Identifier valueParameters (Colon existTypeReference)? (block | (Eq NL? expression))?
   ;
 
 propertyDeclaration
-  : modifiers (Var | Val) Identifier (Colon existTypeReference)? (Eq NL? expression)? (NL propertyGetter)? (NL propertySetter)?
+  : modifiers (Var | Val) (existTypeReference Dot)? Identifier (Colon existTypeReference)? (Eq NL? expression)? (NL propertyGetter)? (NL propertySetter)?
   ;
 
 typeAliasDeclaration
@@ -53,7 +48,7 @@ typeAliasDeclaration
   ;
 
 inheritance
-  : Colon existTypeReference
+  : Colon existTypeReference valueArguments?
   ;
 
 propertyGetter
@@ -69,13 +64,14 @@ modifiers
   ;
 
 modifier
-  : Sealed
+  : Open
+  | Abstract
   | Operator
+  | Singleton
   ;
 
 classBody
-  : LeftBracket NL* RightBracket
-  | LeftBracket NL (declaration NL)* declaration? NL RightBracket
+  : LeftBracket NL* (declaration NL*)* declaration? NL* RightBracket
   ;
 
 typeParameters
@@ -104,12 +100,20 @@ primaryConstructorSingleLineValueParameters
   ;
 
 primaryConstructorMultiLineValueParameters
-  : LeftParen NL ((Var | Val)? valueParameter Comma? NL)* ((Var | Val)? valueParameter)? Comma? NL RightParen
+  : LeftParen NL* ((Var | Val)? valueParameter Comma? NL*)* ((Var | Val)? valueParameter)? Comma? NL* RightParen
   ;
 
 lambdaValueParameters
-  : singleLineValueParameters
-  | multiLineValueParameters
+  : lambdaSingleLineValueParameters
+  | lambdaMultiLineValueParameters
+  ;
+
+lambdaSingleLineValueParameters
+  : (valueParameter Comma)* valueParameter?
+  ;
+
+lambdaMultiLineValueParameters
+  : NL* (valueParameter Comma? NL*)* (valueParameter Comma?)? NL*
   ;
 
 valueParameters
@@ -130,23 +134,40 @@ valueParameter
   ;
 
 valueArguments
-  : LeftParen (valueArgument Comma)* valueArgument RightParen
+  : singleLineValueArguments
+  | multiLineValueArguments
+  ;
+
+singleLineValueArguments
+  : LeftParen (valueArgument Comma)* valueArgument? RightParen
+  ;
+
+multiLineValueArguments
+  : LeftParen NL* (valueArgument Comma? NL*)* (valueArgument Comma?)? NL* RightParen
   ;
 
 valueArgument
-  : expression
+  : (Identifier Colon)? expression
   ;
 
 existTypeReference
   : Exist? typeReference
+  | LeftParen existTypeReference RightParen
   ;
 
 typeReference
-  : (Identifier Dot)* Identifier typeArguments? Nullable?
+  : typeIdentifier typeArguments? Nullable?
+  | Dynamic
+  | Nothing
+  | LeftParen typeReference RightParen
+  ;
+
+typeIdentifier
+  : (Identifier Dot)* Identifier
   ;
 
 block
-  : LeftBracket NL* (statement NL*)* statement? NL* RightBracket
+  : LeftBracket NL* (statement NL+)* statement? NL* RightBracket
   ;
 
 statement
@@ -218,7 +239,7 @@ primaryExpression
   : parenthesizedExpression
   | callableReference
   | functionLiteral
-  | objectLiteral
+  | dataLiteral
   | collectionLiteral
   | thisExpression
   | ifExpression
@@ -235,7 +256,7 @@ parenthesizedExpression
   ;
 
 callableReference
-  : typeReference Reference (Identifier | Class | parenthesizedExpression)
+  : typeReference Reference (Identifier | Data | parenthesizedExpression)
   ;
 
 functionLiteral
@@ -243,8 +264,8 @@ functionLiteral
   | anonymousFunction
   ;
 
-objectLiteral
-  : Object inheritance? classBody?
+dataLiteral
+  : Data inheritance? classBody?
   ;
 
 collectionLiteral
@@ -301,7 +322,7 @@ postfixUnarySuffix
   | typeArguments
   | callSuffix
   | LeftSquare (expression Comma)* expression? RightSquare
-  | (Dot | SafeDot | Reference) (Identifier | parenthesizedExpression | Class)
+  | (Dot | SafeDot | Reference) (Identifier | parenthesizedExpression | Data)
   ;
 
 callSuffix
@@ -313,7 +334,7 @@ lambdaLiteral
   ;
 
 functionCall
-  : typeReference LeftParen NL* (expression Comma NL*)* expression? Comma? NL* RightParen
+  : typeReference valueArguments
   ;
 
 propertyCall

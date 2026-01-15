@@ -13,15 +13,73 @@ import com.yurin.antlrkotlin.parsers.generated.YurinLexer
 import com.yurin.antlrkotlin.parsers.generated.YurinLexer.Tokens
 import com.yurin.antlrkotlin.parsers.generated.YurinParser
 import com.yurin.antlrkotlin.parsers.generated.YurinParserBaseVisitor
-import org.antlr.v4.kotlinruntime.CharStreams
-import org.antlr.v4.kotlinruntime.CommonTokenStream
-import org.antlr.v4.kotlinruntime.Token
+import org.antlr.v4.kotlinruntime.*
+import org.antlr.v4.kotlinruntime.tree.ParseTreeWalker
 import org.antlr.v4.kotlinruntime.tree.TerminalNode
+
+fun getErrors(code: String): List<PositionErrorListener.Error> {
+	val tokens = CommonTokenStream(YurinLexer(CharStreams.fromString(code)))
+	val listener = PositionErrorListener(code)
+	YurinParser(tokens).apply {
+		removeErrorListeners()
+		addErrorListener(listener)
+	}.yurinFile()
+	return listener.errors
+}
 
 fun highlight(code: String): AnnotatedString {
 	val tokens = CommonTokenStream(YurinLexer(CharStreams.fromString(code)))
-	val tree = YurinParser(tokens).yurinFile()
-	return HighlightingVisitor(tokens, code).apply { visit(tree) }.build()
+	val listener = PositionErrorListener(code)
+	val tree = YurinParser(tokens).apply {
+		removeErrorListeners()
+		addErrorListener(listener)
+	}.yurinFile()
+	val collectListener = DeclarationCollectListener()
+	ParseTreeWalker.DEFAULT.walk(collectListener, tree)
+	return HighlightingVisitor(tokens, code, collectListener).apply { visit(tree) }.build()
+}
+
+class PositionErrorListener(
+	private val source: String,
+) : BaseErrorListener() {
+	data class Error(
+		val start: Int,
+		val end: Int,
+		val line: Int,
+		val charPositionInLine: Int,
+		val msg: String,
+	)
+
+	val errors = mutableListOf<Error>()
+
+	override fun syntaxError(
+		recognizer: Recognizer<*, *>,
+		offendingSymbol: Any?,
+		line: Int,
+		charPositionInLine: Int,
+		msg: String,
+		e: RecognitionException?,
+	) {
+		val start = toOffset(source, line, charPositionInLine)
+		val end = when (offendingSymbol) {
+			is Token -> offendingSymbol.stopIndex + 1
+			else -> start + 1
+		}
+
+		errors += Error(start, end, line, charPositionInLine, msg)
+	}
+
+	fun toOffset(text: String, line: Int, column: Int): Int {
+		var l = 1
+		var i = 0
+
+		while (i < text.length && l < line) {
+			if (text[i] == '\n') l++
+			i++
+		}
+
+		return i + column
+	}
 }
 
 object HighlightingTransformation : VisualTransformation {
@@ -34,8 +92,25 @@ object HighlightingTransformation : VisualTransformation {
 class HighlightingVisitor(
 	tokens: CommonTokenStream,
 	source: String,
-) : YurinParserBaseVisitor<Result<Unit>>() {
+	private val collectListener: DeclarationCollectListener,
+) : YurinParserBaseVisitor<Unit>() {
 	private val builder = AnnotatedString.Builder(source)
+	private lateinit var currentPackage: String
+
+	val currentPackageDataIdentifiers by lazy {
+		collectListener.dataTypeIdentifiers
+			.filter { it.first == currentPackage }
+			.map { it.second }
+	}
+
+	val currentPackageTraitIdentifiers by lazy {
+		collectListener.traitTypeIdentifiers
+			.filter { it.first == currentPackage }
+			.map { it.second }
+	}
+
+	val packagedDataIdentifiers = collectListener.dataTypeIdentifiers.map { it.first + "." + it.second }
+	val packagedTraitIdentifiers = collectListener.traitTypeIdentifiers.map { it.first + "." + it.second }
 
 	init {
 		tokens.tokens.forEach { token ->
@@ -43,47 +118,41 @@ class HighlightingVisitor(
 		}
 	}
 
-	override fun visitYurinFile(ctx: YurinParser.YurinFileContext): Result<Unit> = runCatching {
+	override fun visitYurinFile(ctx: YurinParser.YurinFileContext) {
+		currentPackage = ctx.packageHeader()?.Identifier()?.joinToString(".") ?: ""
 		ctx.packageHeader()?.accept(this)
+
 		ctx.importHeader().forEach { node ->
 			node.accept(this)
 		}
+
 		ctx.declaration().forEach { node ->
 			node.accept(this)
 		}
 	}
 
-	override fun visitPackageHeader(ctx: YurinParser.PackageHeaderContext): Result<Unit> = runCatching {
+	override fun visitPackageHeader(ctx: YurinParser.PackageHeaderContext) {
 		super.visitPackageHeader(ctx)
 	}
 
-	override fun visitImportHeader(ctx: YurinParser.ImportHeaderContext): Result<Unit> = runCatching {
+	override fun visitImportHeader(ctx: YurinParser.ImportHeaderContext) {
 		super.visitImportHeader(ctx)
 	}
 
-	override fun visitDeclaration(ctx: YurinParser.DeclarationContext): Result<Unit> = runCatching {
+	override fun visitDeclaration(ctx: YurinParser.DeclarationContext) {
 		super.visitDeclaration(ctx)
 	}
 
-	override fun visitClassDeclaration(ctx: YurinParser.ClassDeclarationContext): Result<Unit> = runCatching {
+	override fun visitDataDeclaration(ctx: YurinParser.DataDeclarationContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
-				ctx.Identifier() -> highlightToken((node as TerminalNode).symbol, ClassDeclaration)
+				ctx.Identifier() -> highlightToken((node as TerminalNode).symbol, DataDeclaration)
 				else -> node.accept(this)
 			}
 		}
 	}
 
-	override fun visitObjectDeclaration(ctx: YurinParser.ObjectDeclarationContext): Result<Unit> = runCatching {
-		ctx.children?.forEach { node ->
-			when (node) {
-				ctx.Identifier() -> highlightToken((node as TerminalNode).symbol, ClassDeclaration)
-				else -> node.accept(this)
-			}
-		}
-	}
-
-	override fun visitTraitDeclaration(ctx: YurinParser.TraitDeclarationContext): Result<Unit> = runCatching {
+	override fun visitTraitDeclaration(ctx: YurinParser.TraitDeclarationContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
 				ctx.Identifier() -> highlightToken((node as TerminalNode).symbol, TraitDeclaration)
@@ -92,26 +161,11 @@ class HighlightingVisitor(
 		}
 	}
 
-	override fun visitImplDeclaration(ctx: YurinParser.ImplDeclarationContext): Result<Unit> = runCatching {
-		ctx.children?.forEach { node ->
-			when (node) {
-				ctx.Identifier() -> highlightToken((node as TerminalNode).symbol, FunctionDeclaration)
-				ctx.typeReference() -> {
-					node as YurinParser.TypeReferenceContext
-					node.children?.forEach { childNode ->
-						when (childNode) {
-							in node.Identifier() -> highlightToken((childNode as TerminalNode).symbol, TraitDeclaration)
-							else -> childNode.accept(this)
-						}
-					}
-				}
-
-				else -> node.accept(this)
-			}
-		}
+	override fun visitImplDeclaration(ctx: YurinParser.ImplDeclarationContext) {
+		super.visitImplDeclaration(ctx)
 	}
 
-	override fun visitFunctionDeclaration(ctx: YurinParser.FunctionDeclarationContext): Result<Unit> = runCatching {
+	override fun visitFunctionDeclaration(ctx: YurinParser.FunctionDeclarationContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
 				ctx.Identifier() -> highlightToken((node as TerminalNode).symbol, FunctionDeclaration)
@@ -120,7 +174,7 @@ class HighlightingVisitor(
 		}
 	}
 
-	override fun visitPropertyDeclaration(ctx: YurinParser.PropertyDeclarationContext): Result<Unit> = runCatching {
+	override fun visitPropertyDeclaration(ctx: YurinParser.PropertyDeclarationContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
 				ctx.Identifier() -> highlightToken((node as TerminalNode).symbol, PropertyDeclaration)
@@ -129,84 +183,92 @@ class HighlightingVisitor(
 		}
 	}
 
-	override fun visitTypeAliasDeclaration(ctx: YurinParser.TypeAliasDeclarationContext): Result<Unit> = runCatching {
+	override fun visitTypeAliasDeclaration(ctx: YurinParser.TypeAliasDeclarationContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
-				ctx.Identifier() -> highlightToken((node as TerminalNode).symbol, ClassDeclaration)
+				ctx.Identifier() -> highlightToken((node as TerminalNode).symbol, DataDeclaration)
 				else -> node.accept(this)
 			}
 		}
 	}
 
-	override fun visitInheritance(ctx: YurinParser.InheritanceContext): Result<Unit> = runCatching {
+	override fun visitInheritance(ctx: YurinParser.InheritanceContext) {
 		super.visitInheritance(ctx)
 	}
 
-	override fun visitPropertyGetter(ctx: YurinParser.PropertyGetterContext): Result<Unit> = runCatching {
+	override fun visitPropertyGetter(ctx: YurinParser.PropertyGetterContext) {
 		super.visitPropertyGetter(ctx)
 	}
 
-	override fun visitPropertySetter(ctx: YurinParser.PropertySetterContext): Result<Unit> = runCatching {
+	override fun visitPropertySetter(ctx: YurinParser.PropertySetterContext) {
 		super.visitPropertySetter(ctx)
 	}
 
-	override fun visitModifiers(ctx: YurinParser.ModifiersContext): Result<Unit> = runCatching {
+	override fun visitModifiers(ctx: YurinParser.ModifiersContext) {
 		super.visitModifiers(ctx)
 	}
 
-	override fun visitModifier(ctx: YurinParser.ModifierContext): Result<Unit> = runCatching {
+	override fun visitModifier(ctx: YurinParser.ModifierContext) {
 		super.visitModifier(ctx)
 	}
 
-	override fun visitClassBody(ctx: YurinParser.ClassBodyContext): Result<Unit> = runCatching {
+	override fun visitClassBody(ctx: YurinParser.ClassBodyContext) {
 		super.visitClassBody(ctx)
 	}
 
-	override fun visitTypeParameters(ctx: YurinParser.TypeParametersContext): Result<Unit> = runCatching {
+	override fun visitTypeParameters(ctx: YurinParser.TypeParametersContext) {
 		super.visitTypeParameters(ctx)
 	}
 
-	override fun visitTypeParameter(ctx: YurinParser.TypeParameterContext): Result<Unit> = runCatching {
+	override fun visitTypeParameter(ctx: YurinParser.TypeParameterContext) {
 		super.visitTypeParameter(ctx)
 	}
 
-	override fun visitTypeArguments(ctx: YurinParser.TypeArgumentsContext): Result<Unit> = runCatching {
+	override fun visitTypeArguments(ctx: YurinParser.TypeArgumentsContext) {
 		super.visitTypeArguments(ctx)
 	}
 
-	override fun visitTypeArgument(ctx: YurinParser.TypeArgumentContext): Result<Unit> = runCatching {
+	override fun visitTypeArgument(ctx: YurinParser.TypeArgumentContext) {
 		super.visitTypeArgument(ctx)
 	}
 
-	override fun visitPrimaryConstructorValueParameters(ctx: YurinParser.PrimaryConstructorValueParametersContext): Result<Unit> = runCatching {
+	override fun visitPrimaryConstructorValueParameters(ctx: YurinParser.PrimaryConstructorValueParametersContext) {
 		super.visitPrimaryConstructorValueParameters(ctx)
 	}
 
-	override fun visitPrimaryConstructorSingleLineValueParameters(ctx: YurinParser.PrimaryConstructorSingleLineValueParametersContext): Result<Unit> = runCatching {
+	override fun visitPrimaryConstructorSingleLineValueParameters(ctx: YurinParser.PrimaryConstructorSingleLineValueParametersContext) {
 		super.visitPrimaryConstructorSingleLineValueParameters(ctx)
 	}
 
-	override fun visitPrimaryConstructorMultiLineValueParameters(ctx: YurinParser.PrimaryConstructorMultiLineValueParametersContext): Result<Unit> = runCatching {
+	override fun visitPrimaryConstructorMultiLineValueParameters(ctx: YurinParser.PrimaryConstructorMultiLineValueParametersContext) {
 		super.visitPrimaryConstructorMultiLineValueParameters(ctx)
 	}
 
-	override fun visitLambdaValueParameters(ctx: YurinParser.LambdaValueParametersContext): Result<Unit> = runCatching {
+	override fun visitLambdaValueParameters(ctx: YurinParser.LambdaValueParametersContext) {
 		super.visitLambdaValueParameters(ctx)
 	}
 
-	override fun visitValueParameters(ctx: YurinParser.ValueParametersContext): Result<Unit> = runCatching {
+	override fun visitLambdaSingleLineValueParameters(ctx: YurinParser.LambdaSingleLineValueParametersContext) {
+		super.visitLambdaSingleLineValueParameters(ctx)
+	}
+
+	override fun visitLambdaMultiLineValueParameters(ctx: YurinParser.LambdaMultiLineValueParametersContext) {
+		super.visitLambdaMultiLineValueParameters(ctx)
+	}
+
+	override fun visitValueParameters(ctx: YurinParser.ValueParametersContext) {
 		super.visitValueParameters(ctx)
 	}
 
-	override fun visitSingleLineValueParameters(ctx: YurinParser.SingleLineValueParametersContext): Result<Unit> = runCatching {
+	override fun visitSingleLineValueParameters(ctx: YurinParser.SingleLineValueParametersContext) {
 		super.visitSingleLineValueParameters(ctx)
 	}
 
-	override fun visitMultiLineValueParameters(ctx: YurinParser.MultiLineValueParametersContext): Result<Unit> = runCatching {
+	override fun visitMultiLineValueParameters(ctx: YurinParser.MultiLineValueParametersContext) {
 		super.visitMultiLineValueParameters(ctx)
 	}
 
-	override fun visitValueParameter(ctx: YurinParser.ValueParameterContext): Result<Unit> = runCatching {
+	override fun visitValueParameter(ctx: YurinParser.ValueParameterContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
 				ctx.Identifier() -> highlightToken((node as TerminalNode).symbol, PropertyDeclaration)
@@ -215,180 +277,202 @@ class HighlightingVisitor(
 		}
 	}
 
-	override fun visitValueArguments(ctx: YurinParser.ValueArgumentsContext): Result<Unit> = runCatching {
+	override fun visitValueArguments(ctx: YurinParser.ValueArgumentsContext) {
 		super.visitValueArguments(ctx)
 	}
 
-	override fun visitValueArgument(ctx: YurinParser.ValueArgumentContext): Result<Unit> = runCatching {
+	override fun visitSingleLineValueArguments(ctx: YurinParser.SingleLineValueArgumentsContext) {
+		super.visitSingleLineValueArguments(ctx)
+	}
+
+	override fun visitMultiLineValueArguments(ctx: YurinParser.MultiLineValueArgumentsContext) {
+		super.visitMultiLineValueArguments(ctx)
+	}
+
+	override fun visitValueArgument(ctx: YurinParser.ValueArgumentContext) {
 		super.visitValueArgument(ctx)
 	}
 
-	override fun visitExistTypeReference(ctx: YurinParser.ExistTypeReferenceContext): Result<Unit> = runCatching {
+	override fun visitExistTypeReference(ctx: YurinParser.ExistTypeReferenceContext) {
 		super.visitExistTypeReference(ctx)
 	}
 
-	override fun visitTypeReference(ctx: YurinParser.TypeReferenceContext): Result<Unit> = runCatching {
-		ctx.children?.forEach { node ->
-			when (node) {
-				in ctx.Identifier() -> highlightToken((node as TerminalNode).symbol, ClassDeclaration)
-				else -> node.accept(this)
+	override fun visitTypeReference(ctx: YurinParser.TypeReferenceContext) {
+		super.visitTypeReference(ctx)
+	}
+
+	override fun visitTypeIdentifier(ctx: YurinParser.TypeIdentifierContext) {
+		var identifier = ""
+		ctx.Identifier().forEach { node ->
+			if (identifier.isNotEmpty()) {
+				identifier += "."
+			}
+			identifier += node.text
+			when (identifier) {
+				in currentPackageDataIdentifiers,
+				in packagedDataIdentifiers,
+					-> highlightToken(node.symbol, DataDeclaration)
+
+				in currentPackageTraitIdentifiers,
+				in packagedTraitIdentifiers,
+					-> highlightToken(node.symbol, TraitDeclaration)
 			}
 		}
 	}
 
-	override fun visitBlock(ctx: YurinParser.BlockContext): Result<Unit> = runCatching {
+	override fun visitBlock(ctx: YurinParser.BlockContext) {
 		super.visitBlock(ctx)
 	}
 
-	override fun visitStatement(ctx: YurinParser.StatementContext): Result<Unit> = runCatching {
+	override fun visitStatement(ctx: YurinParser.StatementContext) {
 		super.visitStatement(ctx)
 	}
 
-	override fun visitExpression(ctx: YurinParser.ExpressionContext): Result<Unit> = runCatching {
+	override fun visitExpression(ctx: YurinParser.ExpressionContext) {
 		super.visitExpression(ctx)
 	}
 
-	override fun visitDisjunction(ctx: YurinParser.DisjunctionContext): Result<Unit> = runCatching {
+	override fun visitDisjunction(ctx: YurinParser.DisjunctionContext) {
 		super.visitDisjunction(ctx)
 	}
 
-	override fun visitConjunction(ctx: YurinParser.ConjunctionContext): Result<Unit> = runCatching {
+	override fun visitConjunction(ctx: YurinParser.ConjunctionContext) {
 		super.visitConjunction(ctx)
 	}
 
-	override fun visitEquality(ctx: YurinParser.EqualityContext): Result<Unit> = runCatching {
+	override fun visitEquality(ctx: YurinParser.EqualityContext) {
 		super.visitEquality(ctx)
 	}
 
-	override fun visitComparison(ctx: YurinParser.ComparisonContext): Result<Unit> = runCatching {
+	override fun visitComparison(ctx: YurinParser.ComparisonContext) {
 		super.visitComparison(ctx)
 	}
 
-	override fun visitGenericCallLikeComparison(ctx: YurinParser.GenericCallLikeComparisonContext): Result<Unit> = runCatching {
+	override fun visitGenericCallLikeComparison(ctx: YurinParser.GenericCallLikeComparisonContext) {
 		super.visitGenericCallLikeComparison(ctx)
 	}
 
-	override fun visitInfixOperation(ctx: YurinParser.InfixOperationContext): Result<Unit> = runCatching {
+	override fun visitInfixOperation(ctx: YurinParser.InfixOperationContext) {
 		super.visitInfixOperation(ctx)
 	}
 
-	override fun visitElvisExpression(ctx: YurinParser.ElvisExpressionContext): Result<Unit> = runCatching {
+	override fun visitElvisExpression(ctx: YurinParser.ElvisExpressionContext) {
 		super.visitElvisExpression(ctx)
 	}
 
-	override fun visitInfixFunctionCall(ctx: YurinParser.InfixFunctionCallContext): Result<Unit> = runCatching {
+	override fun visitInfixFunctionCall(ctx: YurinParser.InfixFunctionCallContext) {
 		super.visitInfixFunctionCall(ctx)
 	}
 
-	override fun visitRangeExpression(ctx: YurinParser.RangeExpressionContext): Result<Unit> = runCatching {
+	override fun visitRangeExpression(ctx: YurinParser.RangeExpressionContext) {
 		super.visitRangeExpression(ctx)
 	}
 
-	override fun visitAdditiveExpression(ctx: YurinParser.AdditiveExpressionContext): Result<Unit> = runCatching {
+	override fun visitAdditiveExpression(ctx: YurinParser.AdditiveExpressionContext) {
 		super.visitAdditiveExpression(ctx)
 	}
 
-	override fun visitMultiplicativeExpression(ctx: YurinParser.MultiplicativeExpressionContext): Result<Unit> = runCatching {
+	override fun visitMultiplicativeExpression(ctx: YurinParser.MultiplicativeExpressionContext) {
 		super.visitMultiplicativeExpression(ctx)
 	}
 
-	override fun visitAsExpression(ctx: YurinParser.AsExpressionContext): Result<Unit> = runCatching {
+	override fun visitAsExpression(ctx: YurinParser.AsExpressionContext) {
 		super.visitAsExpression(ctx)
 	}
 
-	override fun visitPrefixUnaryExpression(ctx: YurinParser.PrefixUnaryExpressionContext): Result<Unit> = runCatching {
+	override fun visitPrefixUnaryExpression(ctx: YurinParser.PrefixUnaryExpressionContext) {
 		super.visitPrefixUnaryExpression(ctx)
 	}
 
-	override fun visitPostfixUnaryExpression(ctx: YurinParser.PostfixUnaryExpressionContext): Result<Unit> = runCatching {
+	override fun visitPostfixUnaryExpression(ctx: YurinParser.PostfixUnaryExpressionContext) {
 		super.visitPostfixUnaryExpression(ctx)
 	}
 
-	override fun visitPrimaryExpression(ctx: YurinParser.PrimaryExpressionContext): Result<Unit> = runCatching {
+	override fun visitPrimaryExpression(ctx: YurinParser.PrimaryExpressionContext) {
 		super.visitPrimaryExpression(ctx)
 	}
 
-	override fun visitParenthesizedExpression(ctx: YurinParser.ParenthesizedExpressionContext): Result<Unit> = runCatching {
+	override fun visitParenthesizedExpression(ctx: YurinParser.ParenthesizedExpressionContext) {
 		super.visitParenthesizedExpression(ctx)
 	}
 
-	override fun visitCallableReference(ctx: YurinParser.CallableReferenceContext): Result<Unit> = runCatching {
+	override fun visitCallableReference(ctx: YurinParser.CallableReferenceContext) {
 		super.visitCallableReference(ctx)
 	}
 
-	override fun visitFunctionLiteral(ctx: YurinParser.FunctionLiteralContext): Result<Unit> = runCatching {
+	override fun visitFunctionLiteral(ctx: YurinParser.FunctionLiteralContext) {
 		super.visitFunctionLiteral(ctx)
 	}
 
-	override fun visitObjectLiteral(ctx: YurinParser.ObjectLiteralContext): Result<Unit> = runCatching {
-		super.visitObjectLiteral(ctx)
+	override fun visitDataLiteral(ctx: YurinParser.DataLiteralContext) {
+		super.visitDataLiteral(ctx)
 	}
 
-	override fun visitCollectionLiteral(ctx: YurinParser.CollectionLiteralContext): Result<Unit> = runCatching {
+	override fun visitCollectionLiteral(ctx: YurinParser.CollectionLiteralContext) {
 		super.visitCollectionLiteral(ctx)
 	}
 
-	override fun visitThisExpression(ctx: YurinParser.ThisExpressionContext): Result<Unit> = runCatching {
+	override fun visitThisExpression(ctx: YurinParser.ThisExpressionContext) {
 		super.visitThisExpression(ctx)
 	}
 
-	override fun visitIfExpression(ctx: YurinParser.IfExpressionContext): Result<Unit> = runCatching {
+	override fun visitIfExpression(ctx: YurinParser.IfExpressionContext) {
 		super.visitIfExpression(ctx)
 	}
 
-	override fun visitMatchExpression(ctx: YurinParser.MatchExpressionContext): Result<Unit> = runCatching {
+	override fun visitMatchExpression(ctx: YurinParser.MatchExpressionContext) {
 		super.visitMatchExpression(ctx)
 	}
 
-	override fun visitJumpExpression(ctx: YurinParser.JumpExpressionContext): Result<Unit> = runCatching {
+	override fun visitJumpExpression(ctx: YurinParser.JumpExpressionContext) {
 		super.visitJumpExpression(ctx)
 	}
 
-	override fun visitMatchSubject(ctx: YurinParser.MatchSubjectContext): Result<Unit> = runCatching {
+	override fun visitMatchSubject(ctx: YurinParser.MatchSubjectContext) {
 		super.visitMatchSubject(ctx)
 	}
 
-	override fun visitMatchEntry(ctx: YurinParser.MatchEntryContext): Result<Unit> = runCatching {
+	override fun visitMatchEntry(ctx: YurinParser.MatchEntryContext) {
 		super.visitMatchEntry(ctx)
 	}
 
-	override fun visitMatchCondition(ctx: YurinParser.MatchConditionContext): Result<Unit> = runCatching {
+	override fun visitMatchCondition(ctx: YurinParser.MatchConditionContext) {
 		super.visitMatchCondition(ctx)
 	}
 
-	override fun visitRangeTest(ctx: YurinParser.RangeTestContext): Result<Unit> = runCatching {
+	override fun visitRangeTest(ctx: YurinParser.RangeTestContext) {
 		super.visitRangeTest(ctx)
 	}
 
-	override fun visitTypeTest(ctx: YurinParser.TypeTestContext): Result<Unit> = runCatching {
+	override fun visitTypeTest(ctx: YurinParser.TypeTestContext) {
 		super.visitTypeTest(ctx)
 	}
 
-	override fun visitAnonymousFunction(ctx: YurinParser.AnonymousFunctionContext): Result<Unit> = runCatching {
+	override fun visitAnonymousFunction(ctx: YurinParser.AnonymousFunctionContext) {
 		super.visitAnonymousFunction(ctx)
 	}
 
-	override fun visitPostfixUnarySuffix(ctx: YurinParser.PostfixUnarySuffixContext): Result<Unit> = runCatching {
+	override fun visitPostfixUnarySuffix(ctx: YurinParser.PostfixUnarySuffixContext) {
 		super.visitPostfixUnarySuffix(ctx)
 	}
 
-	override fun visitCallSuffix(ctx: YurinParser.CallSuffixContext): Result<Unit> = runCatching {
+	override fun visitCallSuffix(ctx: YurinParser.CallSuffixContext) {
 		super.visitCallSuffix(ctx)
 	}
 
-	override fun visitLambdaLiteral(ctx: YurinParser.LambdaLiteralContext): Result<Unit> = runCatching {
+	override fun visitLambdaLiteral(ctx: YurinParser.LambdaLiteralContext) {
 		super.visitLambdaLiteral(ctx)
 	}
 
-	override fun visitFunctionCall(ctx: YurinParser.FunctionCallContext): Result<Unit> = runCatching {
+	override fun visitFunctionCall(ctx: YurinParser.FunctionCallContext) {
 		super.visitFunctionCall(ctx)
 	}
 
-	override fun visitPropertyCall(ctx: YurinParser.PropertyCallContext): Result<Unit> = runCatching {
+	override fun visitPropertyCall(ctx: YurinParser.PropertyCallContext) {
 		super.visitPropertyCall(ctx)
 	}
 
-	override fun visitLiteral(ctx: YurinParser.LiteralContext): Result<Unit> = runCatching {
+	override fun visitLiteral(ctx: YurinParser.LiteralContext) {
 		super.visitLiteral(ctx)
 	}
 
@@ -418,14 +502,13 @@ class HighlightingVisitor(
 
 	fun build() = builder.toAnnotatedString()
 
-	override fun defaultResult(): Result<Unit> = Result.success(Unit)
+	override fun defaultResult() {}
 }
 
 private val map = mapOf(
 	Tokens.Package to Keyword,
 	Tokens.Import to Keyword,
-	Tokens.Class to Keyword,
-	Tokens.Object to Keyword,
+	Tokens.Data to Keyword,
 	Tokens.Trait to Keyword,
 	Tokens.Impl to Keyword,
 	Tokens.Fun to Keyword,
@@ -434,8 +517,13 @@ private val map = mapOf(
 	Tokens.Get to Keyword,
 	Tokens.Set to Keyword,
 	Tokens.Typealias to Keyword,
-	Tokens.Sealed to Keyword,
+	Tokens.Open to Keyword,
+	Tokens.Abstract to Keyword,
 	Tokens.Operator to Keyword,
+	Tokens.Singleton to Keyword,
+	Tokens.Unsafe to Keyword,
+	Tokens.Nothing to Keyword,
+	Tokens.Dynamic to Keyword,
 	Tokens.If to Keyword,
 	Tokens.Else to Keyword,
 	Tokens.Match to Keyword,
@@ -523,7 +611,7 @@ private enum class Highlight(
 	NumberLiteral(0xFFD19A66),
 	BlockComment(0xFF59626F, isItalic = true),
 	LineComment(0xFF59626F, isItalic = true),
-	ClassDeclaration(0xFFE5C17C),
+	DataDeclaration(0xFFE5C17C),
 	TraitDeclaration(0xFF98C379),
 	Identifier(0xFFABB2BF),
 	PropertyDeclaration(0xFFE06C75),
