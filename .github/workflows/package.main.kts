@@ -156,7 +156,7 @@ fun JobBuilder<JobOutputs.EMPTY>.publish(name: String, task: String, path: Strin
 	)
 	uses(
 		action = UploadArtifact(
-			name = "MCL-$name",
+			name = "YurinViewer-$name",
 			path = listOf("build/compose/$path/*"),
 		),
 	)

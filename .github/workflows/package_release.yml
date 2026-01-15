@@ -38,7 +38,7 @@ jobs:
     - id: 'step-5'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-windows-uberjar-amd64'
+        name: 'YurinViewer-windows-uberjar-amd64'
         path: 'build/compose/jars/*'
     - id: 'step-6'
       name: 'package windows-portable-amd64'
@@ -46,7 +46,7 @@ jobs:
     - id: 'step-7'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-windows-portable-amd64'
+        name: 'YurinViewer-windows-portable-amd64'
         path: 'build/compose/binaries/main-release/app/*'
     - id: 'step-8'
       name: 'package windows-installer-msi-amd64'
@@ -54,7 +54,7 @@ jobs:
     - id: 'step-9'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-windows-installer-msi-amd64'
+        name: 'YurinViewer-windows-installer-msi-amd64'
         path: 'build/compose/binaries/main-release/msi/*'
     - id: 'step-10'
       name: 'package windows-installer-exe-amd64'
@@ -62,7 +62,7 @@ jobs:
     - id: 'step-11'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-windows-installer-exe-amd64'
+        name: 'YurinViewer-windows-installer-exe-amd64'
         path: 'build/compose/binaries/main-release/exe/*'
   package-windows-aarch64:
     runs-on: 'windows-11-arm'
@@ -94,7 +94,7 @@ jobs:
     - id: 'step-5'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-windows-uberjar-aarch64'
+        name: 'YurinViewer-windows-uberjar-aarch64'
         path: 'build/compose/jars/*'
     - id: 'step-6'
       name: 'package windows-portable-aarch64'
@@ -102,7 +102,7 @@ jobs:
     - id: 'step-7'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-windows-portable-aarch64'
+        name: 'YurinViewer-windows-portable-aarch64'
         path: 'build/compose/binaries/main-release/app/*'
     - id: 'step-8'
       name: 'package windows-installer-msi-aarch64'
@@ -110,7 +110,7 @@ jobs:
     - id: 'step-9'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-windows-installer-msi-aarch64'
+        name: 'YurinViewer-windows-installer-msi-aarch64'
         path: 'build/compose/binaries/main-release/msi/*'
     - id: 'step-10'
       name: 'package windows-installer-exe-aarch64'
@@ -118,7 +118,7 @@ jobs:
     - id: 'step-11'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-windows-installer-exe-aarch64'
+        name: 'YurinViewer-windows-installer-exe-aarch64'
         path: 'build/compose/binaries/main-release/exe/*'
   package-linux-amd64:
     runs-on: 'ubuntu-latest'
@@ -150,7 +150,7 @@ jobs:
     - id: 'step-5'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-linux-uberjar-amd64'
+        name: 'YurinViewer-linux-uberjar-amd64'
         path: 'build/compose/jars/*'
     - id: 'step-6'
       name: 'package linux-portable-amd64'
@@ -158,7 +158,7 @@ jobs:
     - id: 'step-7'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-linux-portable-amd64'
+        name: 'YurinViewer-linux-portable-amd64'
         path: 'build/compose/binaries/main-release/app/*'
     - id: 'step-8'
       name: 'package linux-installer-deb-amd64'
@@ -166,7 +166,7 @@ jobs:
     - id: 'step-9'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-linux-installer-deb-amd64'
+        name: 'YurinViewer-linux-installer-deb-amd64'
         path: 'build/compose/binaries/main-release/deb/*'
     - id: 'step-10'
       name: 'package linux-installer-rpm-amd64'
@@ -174,7 +174,7 @@ jobs:
     - id: 'step-11'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-linux-installer-rpm-amd64'
+        name: 'YurinViewer-linux-installer-rpm-amd64'
         path: 'build/compose/binaries/main-release/rpm/*'
   package-linux-aarch64:
     runs-on: 'ubuntu-22.04-arm'
@@ -206,7 +206,7 @@ jobs:
     - id: 'step-5'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-linux-uberjar-aarch64'
+        name: 'YurinViewer-linux-uberjar-aarch64'
         path: 'build/compose/jars/*'
     - id: 'step-6'
       name: 'package linux-portable-aarch64'
@@ -214,7 +214,7 @@ jobs:
     - id: 'step-7'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-linux-portable-aarch64'
+        name: 'YurinViewer-linux-portable-aarch64'
         path: 'build/compose/binaries/main-release/app/*'
     - id: 'step-8'
       name: 'package linux-installer-deb-aarch64'
@@ -222,7 +222,7 @@ jobs:
     - id: 'step-9'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-linux-installer-deb-aarch64'
+        name: 'YurinViewer-linux-installer-deb-aarch64'
         path: 'build/compose/binaries/main-release/deb/*'
     - id: 'step-10'
       name: 'package linux-installer-rpm-aarch64'
@@ -230,7 +230,7 @@ jobs:
     - id: 'step-11'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-linux-installer-rpm-aarch64'
+        name: 'YurinViewer-linux-installer-rpm-aarch64'
         path: 'build/compose/binaries/main-release/rpm/*'
   package-macos-aarch64:
     runs-on: 'macos-latest'
@@ -262,7 +262,7 @@ jobs:
     - id: 'step-5'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-macos-uberjar-aarch64'
+        name: 'YurinViewer-macos-uberjar-aarch64'
         path: 'build/compose/jars/*'
     - id: 'step-6'
       name: 'package macos-installer-dmg-aarch64'
@@ -270,5 +270,5 @@ jobs:
     - id: 'step-7'
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'MCL-macos-installer-dmg-aarch64'
+        name: 'YurinViewer-macos-installer-dmg-aarch64'
         path: 'build/compose/binaries/main-release/dmg/*'

@@ -74,6 +74,13 @@ fun App() {
 						onClick = {
 							scope.launch(Dispatchers.IO) {
 								file?.file?.writeText(code)
+									?: FileKit.saveFile(
+										bytes = code.toByteArray(Charsets.UTF_8),
+										baseName = file?.baseName ?: "",
+										extension = "yurin"
+									)?.let {
+										file = it
+									}
 							}
 						},
 					) {
