@@ -5,14 +5,13 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.symbolSkeleton
 import com.yurin.antlrkotlin.parsers.generated.YurinLexer
 import com.yurin.antlrkotlin.parsers.generated.YurinLexer.Tokens
 import com.yurin.antlrkotlin.parsers.generated.YurinParser
 import org.antlr.v4.kotlinruntime.CharStreams
 import org.antlr.v4.kotlinruntime.CommonTokenStream
 import org.antlr.v4.kotlinruntime.Token
-import org.antlr.v4.kotlinruntime.tree.ParseTree
-import org.antlr.v4.kotlinruntime.tree.ParseTreeWalker
 
 data class Highlight(
 	val start: Int,
@@ -45,14 +44,13 @@ fun lexicalHighlight(tokens: CommonTokenStream): List<Highlight> {
 	return tokens.tokens.mapNotNull { it.toHighlight() }
 }
 
-fun syntaxHighlight(tree: ParseTree): List<Highlight> {
+fun syntaxHighlight(tree: YurinParser.YurinFileContext): List<Highlight> {
 	return SyntaxHighlightingVisitor().apply { visit(tree) }.build()
 }
 
-fun semanticHighlight(tree: ParseTree): List<Highlight> {
-	val listener = DeclarationCollectListener()
-	ParseTreeWalker.DEFAULT.walk(listener, tree)
-	return SemanticHighlightVisitor(listener).apply { visit(tree) }.build()
+fun semanticHighlight(tree: YurinParser.YurinFileContext): List<Highlight> {
+	val packageSymbol = symbolSkeleton(tree)
+	return SemanticHighlightVisitor(packageSymbol).apply { visit(tree) }.build()
 }
 
 fun Token.toHighlight(style: HighlightStyle? = null): Highlight? {

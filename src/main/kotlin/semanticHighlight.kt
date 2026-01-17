@@ -1,103 +1,97 @@
 package cn.yurin.languege.viewer
 
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.DataSymbol
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.DeclarationSymbol
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.FunctionSymbol
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.ImplSymbol
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.Modifier
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.PackageSymbol
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.PropertySymbol
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.Symbol
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.TraitSymbol
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.TypealiasSymbol
 import com.yurin.antlrkotlin.parsers.generated.YurinParser
-import com.yurin.antlrkotlin.parsers.generated.YurinParserBaseListener
 import com.yurin.antlrkotlin.parsers.generated.YurinParserBaseVisitor
 
-class DeclarationCollectListener : YurinParserBaseListener() {
-	private val dataIdentifiers = mutableListOf<Pair<String, String>>()
-	private val traitIdentifiers = mutableListOf<Pair<String, String>>()
-	private lateinit var currentPackage: String
-	private val currentSuffix = mutableListOf<String>()
-
-	private fun enter(identifier: String): Pair<String, String> {
-		val result = buildString {
-			if (currentSuffix.isNotEmpty()) {
-				append(currentSuffix.joinToString("."))
-				append(".")
-			}
-			append(identifier)
-		}
-		currentSuffix += identifier
-		return currentPackage to result
-	}
-
-	private fun exit() {
-		currentSuffix.removeLast()
-	}
-
-	override fun enterYurinFile(ctx: YurinParser.YurinFileContext) {
-		currentPackage = ctx.packageHeader()?.Identifier()?.joinToString(".") ?: ""
-	}
-
-	override fun enterDataDeclaration(ctx: YurinParser.DataDeclarationContext) {
-		dataIdentifiers += enter(ctx.Identifier().text)
-	}
-
-	override fun exitDataDeclaration(ctx: YurinParser.DataDeclarationContext) = exit()
-
-	override fun enterTraitDeclaration(ctx: YurinParser.TraitDeclarationContext) {
-		traitIdentifiers += enter(ctx.Identifier().text)
-	}
-
-	override fun exitTraitDeclaration(ctx: YurinParser.TraitDeclarationContext) = exit()
-
-	override fun enterTypeAliasDeclaration(ctx: YurinParser.TypeAliasDeclarationContext) {
-		dataIdentifiers += enter(ctx.Identifier().text)
-	}
-
-	override fun exitTypeAliasDeclaration(ctx: YurinParser.TypeAliasDeclarationContext) = exit()
-
-	val dataTypeIdentifiers: List<Pair<String, String>>
-		get() = dataIdentifiers.toList()
-
-	val traitTypeIdentifiers: List<Pair<String, String>>
-		get() = traitIdentifiers.toList()
-}
-
 class SemanticHighlightVisitor(
-	private val collectListener: DeclarationCollectListener,
+	private val packageSymbol: PackageSymbol,
 ) : YurinParserBaseVisitor<Unit>() {
 	private val highlights = mutableListOf<Highlight>()
-	private lateinit var currentPackage: String
-
-	val currentPackageDataIdentifiers by lazy {
-		collectListener.dataTypeIdentifiers
-			.filter { it.first == currentPackage }
-			.map { it.second }
-	}
-
-	val currentPackageTraitIdentifiers by lazy {
-		collectListener.traitTypeIdentifiers
-			.filter { it.first == currentPackage }
-			.map { it.second }
-	}
-
-	val packagedDataIdentifiers = collectListener.dataTypeIdentifiers.map { it.first + "." + it.second }
-	val packagedTraitIdentifiers = collectListener.traitTypeIdentifiers.map { it.first + "." + it.second }
+	private val currentPackageParts = mutableListOf<String>()
 
 	override fun visitYurinFile(ctx: YurinParser.YurinFileContext) {
-		currentPackage = ctx.packageHeader()?.Identifier()?.joinToString(".") ?: ""
+		ctx.packageHeader()?.Identifier()?.forEach {
+			currentPackageParts += it.text
+		}
 		super.visitYurinFile(ctx)
 	}
 
 	override fun visitTypeIdentifier(ctx: YurinParser.TypeIdentifierContext) {
-		var identifier = ""
-		ctx.Identifier().forEach { node ->
-			if (identifier.isNotEmpty()) {
-				identifier += "."
-			}
-			identifier += node.text
-			when (identifier) {
-				in currentPackageDataIdentifiers,
-				in packagedDataIdentifiers,
-					-> highlights.addIfNotNull(node.symbol.toHighlight(YurinHighlightStyle.dataDeclaration))
-
-				in currentPackageTraitIdentifiers,
-				in packagedTraitIdentifiers,
-					-> highlights.addIfNotNull(node.symbol.toHighlight(YurinHighlightStyle.traitDeclaration))
+		fun List<DeclarationSymbol>.find(name: String) = find { declaration ->
+			when (declaration) {
+				is DataSymbol -> declaration.name == name
+				is TraitSymbol -> declaration.name == name
+				is TypealiasSymbol -> declaration.name == name
+				is ImplSymbol -> false
+				is FunctionSymbol -> declaration.name == name
+				is PropertySymbol -> declaration.name == name
 			}
 		}
+
+		fun findAndHighlight(startSymbol: Symbol? = null) {
+			var symbol: Symbol? = startSymbol
+			var packagePartIndex = 0
+			ctx.Identifier().forEach { node ->
+				val identifier = node.text
+				when (symbol) {
+					null if packageSymbol.packageParts.getOrNull(packagePartIndex) == identifier -> if (++packagePartIndex >= packageSymbol.packageParts.size) {
+						symbol = packageSymbol
+					}
+
+					is PackageSymbol -> symbol = symbol.declarations.find(identifier) ?: return
+
+					is DataSymbol -> symbol = when (val childSymbol = symbol.memberDeclarations.find(identifier) ?: return) {
+						is FunctionSymbol,
+						is PropertySymbol,
+							-> when (symbol.modifiers.any { it == Modifier.Singleton }) {
+							true -> childSymbol
+							else -> return
+						}
+
+						else -> childSymbol
+					}
+
+					is TraitSymbol -> symbol = when (val childSymbol = symbol.memberDeclarations.find(identifier) ?: return) {
+						is FunctionSymbol,
+						is PropertySymbol,
+							-> when (symbol.modifiers.any { it == Modifier.Singleton }) {
+							true -> childSymbol
+							else -> return
+						}
+
+						else -> childSymbol
+					}
+
+					else -> return
+				}
+				(symbol as? DeclarationSymbol)?.let { declaration ->
+					val highlightStyle = when (declaration) {
+						is DataSymbol -> YurinHighlightStyle.dataDeclaration
+						is TypealiasSymbol -> YurinHighlightStyle.dataDeclaration
+						is TraitSymbol -> YurinHighlightStyle.traitDeclaration
+						is FunctionSymbol -> YurinHighlightStyle.functionCall
+						is PropertySymbol -> YurinHighlightStyle.propertyDeclaration
+						else -> null
+					} ?: return
+					highlights.addIfNotNull(node.symbol.toHighlight(highlightStyle))
+				}
+			}
+		}
+
+		if (packageSymbol.packageParts == currentPackageParts) {
+			findAndHighlight(packageSymbol)
+		}
+		findAndHighlight()
 	}
 
 	override fun defaultResult() {}
