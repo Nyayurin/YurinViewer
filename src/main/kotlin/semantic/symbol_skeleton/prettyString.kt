@@ -83,7 +83,9 @@ fun EffectSymbol.prettyString(): String = buildString {
 		appendLine(modifiers.prettyString())
 		appendLine("name = $name")
 		append("typeParameters = ")
-		append(typeParameters.prettyString())
+		appendLine(typeParameters.prettyString())
+		append("aggregatedEffects = ")
+		append(aggregatedEffects.prettyString())
 	}
 	append(")")
 }

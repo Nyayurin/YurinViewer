@@ -41,7 +41,7 @@ typealiasDeclaration
   ;
 
 effectDeclaration
-  : modifier* Effect Identifier typeParameters?
+  : modifier* Effect Identifier typeParameters? (NL* Eq NL* (typeReference Comma? NL*)* typeReference Comma?)?
   ;
 
 implDeclaration

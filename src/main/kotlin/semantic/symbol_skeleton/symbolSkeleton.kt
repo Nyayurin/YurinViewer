@@ -99,6 +99,10 @@ class SymbolSkeletonVisitor : YurinParserBaseVisitor<Symbol?>() {
 			ctx.typeParameters()?.typeParameter()?.forEach { typeParameter ->
 				typeParameters += visitTypeParameter(typeParameter)
 			}
+
+			ctx.typeReference().forEach { typeReference ->
+				aggregatedEffects += visitTypeReference(typeReference)
+			}
 		}.build()
 	}
 

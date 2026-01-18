@@ -93,12 +93,14 @@ data class EffectSymbol(
 	val modifiers: List<Modifier>,
 	override val name: String,
 	val typeParameters: List<TypeParameterSymbol>,
+	val aggregatedEffects: List<TypeReferenceSymbol>,
 ) : DeclarationSymbol(), NamedSymbol {
 	class Builder {
 		val modifiers = mutableListOf<Modifier>()
 		lateinit var name: String
 		val typeParameters = mutableListOf<TypeParameterSymbol>()
-		fun build() = EffectSymbol(modifiers.toList(), name, typeParameters.toList())
+		val aggregatedEffects = mutableListOf<TypeReferenceSymbol>()
+		fun build() = EffectSymbol(modifiers.toList(), name, typeParameters.toList(), aggregatedEffects)
 	}
 }
 
