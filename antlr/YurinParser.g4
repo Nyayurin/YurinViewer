@@ -2,6 +2,8 @@ parser grammar YurinParser;
 
 options { tokenVocab = YurinLexer; }
 
+// SECTION: general
+
 yurinFile
   : NL* (packageHeader NL+)? (importHeader NL+)* (declaration NL+)* declaration? NL* EOF
   ;
@@ -14,72 +16,89 @@ importHeader
   : Import (Identifier Dot)* Identifier
   ;
 
+// SECTION: declaration
+
 declaration
   : dataDeclaration
   | traitDeclaration
   | typealiasDeclaration
+  | effectDeclaration
   | implDeclaration
   | functionDeclaration
   | propertyDeclaration
   ;
 
 dataDeclaration
-  : modifiers (Val | Ref)? Data Identifier typeParameters? primaryConstructorValueParameters? inheritance? classBody?
+  : modifier* (Val | Ref)? Data Identifier typeParameters? primaryConstructorValueParameters? typeBinding? typeBody?
   ;
 
 traitDeclaration
-  : modifiers Trait Identifier typeParameters? inheritance? classBody?
+  : modifier* Trait Identifier typeParameters? typeBinding? typeBody?
   ;
 
 typealiasDeclaration
-  : modifiers Typealias Identifier typeParameters? Eq typeReference
+  : modifier* Typealias Identifier typeParameters? Eq typeReference
+  ;
+
+effectDeclaration
+  : modifier* Effect Identifier typeParameters?
   ;
 
 implDeclaration
-  : modifiers Impl typeReference Colon typeReference classBody?
+  : modifier* Impl typeReference Colon typeReference typeBody?
   ;
 
 functionDeclaration
-  : modifiers Fun typeParameters? receiverType? Identifier valueParameters (Colon typeReference)? (block | (Eq NL? expression))?
+  : modifier* Fun typeParameters? receiverType? Identifier valueParameters (Colon typeReference)? functionEffects? (block | (Eq NL? expression))?
   ;
 
 propertyDeclaration
-  : modifiers (Var | Val) receiverType? Identifier (Colon typeReference)? (Eq NL* expression)? (NL+ propertyGetter)? (NL+ propertySetter)?
+  : modifier* (Var | Val) receiverType? Identifier (Colon typeReference)? functionEffects? (Eq NL* expression)? (NL+ propertyGetter)? (NL+ propertySetter)?
+  ;
+
+typeBinding
+  : Colon NL* (typeReference Comma? NL*)* typeReference Comma?
   ;
 
 receiverType
   : typeReference Dot
   ;
 
-inheritance
-  : Colon NL* (typeReference valueArguments? Comma NL*)* typeReference valueArguments?
+functionEffects
+  : Effect NL* (typeReference Comma? NL*)* typeReference Comma?
   ;
 
 propertyGetter
-  : modifiers Get (valueParameters (block | (Eq NL? expression)))?
+  : modifier* Get (valueParameters (block | (Eq NL? expression)))?
   ;
 
 propertySetter
-  : modifiers Set (valueParameters (block | (Eq NL? expression)))?
-  ;
-
-modifiers
-  : modifier*
+  : modifier* Set (valueParameters (block | (Eq NL? expression)))?
   ;
 
 modifier
   : Open
+  | Sealed
   | Abstract
-  | Operator
   | Singleton
+  | Operator
+  | Impl
+  | visibilityModifier
   ;
 
-classBody
+visibilityModifier
+  : Public
+  | Internal
+  | Restricted
+  | Private
+  ;
+
+typeBody
   : LeftBracket NL* (declaration NL*)* declaration? NL* RightBracket
   ;
 
 typeParameters
-  : LeftAngle (typeParameter Comma)* typeParameter? RightAngle
+  : LeftAngle NL* (typeParameter Comma? NL*)* typeParameter? Comma? NL* RightAngle
   ;
 
 typeParameter
@@ -87,7 +106,7 @@ typeParameter
   ;
 
 typeArguments
-  : LeftAngle (typeArgument Comma)* typeArgument RightAngle
+  : LeftAngle NL* (typeArgument Comma? NL*)* typeArgument Comma? NL* RightAngle
   ;
 
 typeArgument
@@ -139,7 +158,7 @@ statement
   ;
 
 variableStatement
-  : modifiers (Var | Val) Identifier (Colon typeReference)? (Eq NL* expression)?
+  : (Var | Val) Identifier (Colon typeReference)? (Eq NL* expression)?
   ;
 
 expression
@@ -231,11 +250,11 @@ functionLiteral
   ;
 
 dataLiteral
-  : Data inheritance? classBody?
+  : Data typeBinding? typeBody?
   ;
 
 collectionLiteral
-  : LeftSquare (expression Comma)* expression? RightSquare
+  : LeftSquare NL* (expression Comma? NL*)* expression? Comma? NL* RightSquare
   ;
 
 thisExpression
@@ -287,7 +306,7 @@ postfixUnarySuffix
   : (Increment | Decrement)
   | typeArguments
   | callSuffix
-  | LeftSquare (expression Comma)* expression? RightSquare
+  | LeftSquare NL* (expression Comma? NL*)* expression? Comma? NL* RightSquare
   | (Dot | SafeDot | Reference) (Identifier | parenthesizedExpression | Data)
   ;
 

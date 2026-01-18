@@ -8,9 +8,15 @@ interface NamedSymbol {
 
 enum class Modifier {
 	Open,
+	Sealed,
 	Abstract,
-	Operator,
 	Singleton,
+	Operator,
+	Impl,
+	Private,
+	Internal,
+	Restricted,
+	Public,
 }
 
 sealed class Symbol
@@ -33,7 +39,7 @@ data class DataSymbol(
 	val type: Type?,
 	override val name: String,
 	val typeParameters: List<TypeParameterSymbol>,
-	val structureExtension: List<TypeReferenceSymbol>,
+	val typeBindings: List<TypeReferenceSymbol>,
 	val memberDeclarations: List<DeclarationSymbol>,
 ) : DeclarationSymbol(), NamedSymbol {
 	enum class Type {
@@ -45,9 +51,9 @@ data class DataSymbol(
 		var type: Type? = null
 		lateinit var name: String
 		val typeParameters = mutableListOf<TypeParameterSymbol>()
-		val structureExtension = mutableListOf<TypeReferenceSymbol>()
+		val typeBindings = mutableListOf<TypeReferenceSymbol>()
 		val memberDeclarations = mutableListOf<DeclarationSymbol>()
-		fun build() = DataSymbol(modifiers.toList(), type, name, typeParameters.toList(), structureExtension.toList(), memberDeclarations.toList())
+		fun build() = DataSymbol(modifiers.toList(), type, name, typeParameters.toList(), typeBindings.toList(), memberDeclarations.toList())
 	}
 }
 
@@ -55,16 +61,16 @@ data class TraitSymbol(
 	val modifiers: List<Modifier>,
 	override val name: String,
 	val typeParameters: List<TypeParameterSymbol>,
-	val inheritance: List<TypeReferenceSymbol>,
+	val typeBindings: List<TypeReferenceSymbol>,
 	val memberDeclarations: List<DeclarationSymbol>,
 ) : DeclarationSymbol(), NamedSymbol {
 	class Builder {
 		val modifiers = mutableListOf<Modifier>()
 		lateinit var name: String
 		val typeParameters = mutableListOf<TypeParameterSymbol>()
-		val inheritance = mutableListOf<TypeReferenceSymbol>()
+		val typeBindings = mutableListOf<TypeReferenceSymbol>()
 		val memberDeclarations = mutableListOf<DeclarationSymbol>()
-		fun build() = TraitSymbol(modifiers.toList(), name, typeParameters.toList(), inheritance.toList(), memberDeclarations.toList())
+		fun build() = TraitSymbol(modifiers.toList(), name, typeParameters.toList(), typeBindings.toList(), memberDeclarations.toList())
 	}
 }
 
@@ -80,6 +86,19 @@ data class TypealiasSymbol(
 		val typeParameters = mutableListOf<TypeParameterSymbol>()
 		lateinit var expandedType: TypeReferenceSymbol
 		fun build() = TypealiasSymbol(modifiers.toList(), name, typeParameters.toList(), expandedType)
+	}
+}
+
+data class EffectSymbol(
+	val modifiers: List<Modifier>,
+	override val name: String,
+	val typeParameters: List<TypeParameterSymbol>,
+) : DeclarationSymbol(), NamedSymbol {
+	class Builder {
+		val modifiers = mutableListOf<Modifier>()
+		lateinit var name: String
+		val typeParameters = mutableListOf<TypeParameterSymbol>()
+		fun build() = EffectSymbol(modifiers.toList(), name, typeParameters.toList())
 	}
 }
 
@@ -105,6 +124,7 @@ data class FunctionSymbol(
 	val typeParameters: List<TypeParameterSymbol>,
 	val valueParameters: List<ValueParameterSymbol>,
 	val returnType: TypeReferenceSymbol?,
+	val effects: List<TypeReferenceSymbol>,
 ) : DeclarationSymbol(), NamedSymbol {
 	class Builder {
 		val modifiers = mutableListOf<Modifier>()
@@ -113,7 +133,8 @@ data class FunctionSymbol(
 		val typeParameters = mutableListOf<TypeParameterSymbol>()
 		val valueParameters = mutableListOf<ValueParameterSymbol>()
 		var returnType: TypeReferenceSymbol? = null
-		fun build() = FunctionSymbol(modifiers.toList(), receiverType, name, typeParameters.toList(), valueParameters.toList(), returnType)
+		val effects = mutableListOf<TypeReferenceSymbol>()
+		fun build() = FunctionSymbol(modifiers.toList(), receiverType, name, typeParameters.toList(), valueParameters.toList(), returnType, effects.toList())
 	}
 }
 
@@ -123,6 +144,7 @@ data class PropertySymbol(
 	val receiverType: TypeReferenceSymbol?,
 	override val name: String,
 	val returnType: TypeReferenceSymbol?,
+	val effects: List<TypeReferenceSymbol>,
 ) : DeclarationSymbol(), NamedSymbol {
 	class Builder {
 		val modifiers = mutableListOf<Modifier>()
@@ -130,7 +152,8 @@ data class PropertySymbol(
 		var receiverType: TypeReferenceSymbol? = null
 		lateinit var name: String
 		var returnType: TypeReferenceSymbol? = null
-		fun build() = PropertySymbol(modifiers.toList(), isMutable, receiverType, name, returnType)
+		val effects = mutableListOf<TypeReferenceSymbol>()
+		fun build() = PropertySymbol(modifiers.toList(), isMutable, receiverType, name, returnType, effects.toList())
 	}
 }
 

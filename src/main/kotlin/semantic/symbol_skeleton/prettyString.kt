@@ -23,6 +23,7 @@ fun DeclarationSymbol.prettyString(): String = when (this) {
 	is DataSymbol -> prettyString()
 	is TraitSymbol -> prettyString()
 	is TypealiasSymbol -> prettyString()
+	is EffectSymbol -> prettyString()
 	is ImplSymbol -> prettyString()
 	is FunctionSymbol -> prettyString()
 	is PropertySymbol -> prettyString()
@@ -38,7 +39,7 @@ fun DataSymbol.prettyString(): String = buildString {
 		append("typeParameters = ")
 		appendLine(typeParameters.prettyString())
 		append("structureExtension = ")
-		appendLine(structureExtension.prettyString())
+		appendLine(typeBindings.prettyString())
 		append("memberDeclarations = ")
 		append(memberDeclarations.prettyString())
 	}
@@ -54,7 +55,7 @@ fun TraitSymbol.prettyString(): String = buildString {
 		append("typeParameters = ")
 		appendLine(typeParameters.prettyString())
 		append("inheritance = ")
-		appendLine(inheritance.prettyString())
+		appendLine(typeBindings.prettyString())
 		append("memberDeclarations = ")
 		append(memberDeclarations.prettyString())
 	}
@@ -71,6 +72,18 @@ fun TypealiasSymbol.prettyString(): String = buildString {
 		appendLine(typeParameters.prettyString())
 		append("expandedType = ")
 		append(expandedType.prettyString())
+	}
+	append(")")
+}
+
+fun EffectSymbol.prettyString(): String = buildString {
+	appendLine("TypealiasSymbol(")
+	padding {
+		append("modifiers = ")
+		appendLine(modifiers.prettyString())
+		appendLine("name = $name")
+		append("typeParameters = ")
+		append(typeParameters.prettyString())
 	}
 	append(")")
 }
@@ -103,7 +116,9 @@ fun FunctionSymbol.prettyString(): String = buildString {
 		append("valueParameters = ")
 		appendLine(valueParameters.prettyString())
 		append("returnType = ")
-		append(returnType?.prettyString())
+		appendLine(returnType?.prettyString())
+		append("effects = ")
+		append(effects.prettyString())
 	}
 	append(")")
 }
@@ -118,7 +133,9 @@ fun PropertySymbol.prettyString(): String = buildString {
 		appendLine(receiverType?.prettyString())
 		appendLine("name = $name")
 		append("returnType = ")
-		append(returnType?.prettyString())
+		appendLine(returnType?.prettyString())
+		append("effects = ")
+		append(effects.prettyString())
 	}
 	append(")")
 }

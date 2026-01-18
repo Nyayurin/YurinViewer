@@ -25,6 +25,24 @@ class SyntaxHighlightingVisitor : YurinParserBaseVisitor<Unit>() {
 		}
 	}
 
+	override fun visitTypealiasDeclaration(ctx: YurinParser.TypealiasDeclarationContext) {
+		ctx.children?.forEach { node ->
+			when (node) {
+				ctx.Identifier() -> highlights.addIfNotNull((node as TerminalNode).symbol.toHighlight(YurinHighlightStyle.dataDeclaration))
+				else -> node.accept(this)
+			}
+		}
+	}
+
+	override fun visitEffectDeclaration(ctx: YurinParser.EffectDeclarationContext) {
+		ctx.children?.forEach { node ->
+			when (node) {
+				ctx.Identifier() -> highlights.addIfNotNull((node as TerminalNode).symbol.toHighlight(YurinHighlightStyle.effectDeclaration))
+				else -> node.accept(this)
+			}
+		}
+	}
+
 	override fun visitFunctionDeclaration(ctx: YurinParser.FunctionDeclarationContext) {
 		ctx.children?.forEach { node ->
 			when (node) {
@@ -38,15 +56,6 @@ class SyntaxHighlightingVisitor : YurinParserBaseVisitor<Unit>() {
 		ctx.children?.forEach { node ->
 			when (node) {
 				ctx.Identifier() -> highlights.addIfNotNull((node as TerminalNode).symbol.toHighlight(YurinHighlightStyle.propertyDeclaration))
-				else -> node.accept(this)
-			}
-		}
-	}
-
-	override fun visitTypealiasDeclaration(ctx: YurinParser.TypealiasDeclarationContext) {
-		ctx.children?.forEach { node ->
-			when (node) {
-				ctx.Identifier() -> highlights.addIfNotNull((node as TerminalNode).symbol.toHighlight(YurinHighlightStyle.dataDeclaration))
 				else -> node.accept(this)
 			}
 		}

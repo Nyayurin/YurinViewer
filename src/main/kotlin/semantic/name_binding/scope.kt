@@ -1,13 +1,6 @@
 package cn.yurin.languege.viewer.semantic.name_binding
 
-import cn.yurin.languege.viewer.semantic.symbol_skeleton.DataSymbol
-import cn.yurin.languege.viewer.semantic.symbol_skeleton.DeclarationSymbol
-import cn.yurin.languege.viewer.semantic.symbol_skeleton.FunctionSymbol
-import cn.yurin.languege.viewer.semantic.symbol_skeleton.NamedSymbol
-import cn.yurin.languege.viewer.semantic.symbol_skeleton.PackageSymbol
-import cn.yurin.languege.viewer.semantic.symbol_skeleton.Symbol
-import cn.yurin.languege.viewer.semantic.symbol_skeleton.TraitSymbol
-import cn.yurin.languege.viewer.semantic.symbol_skeleton.TypealiasSymbol
+import cn.yurin.languege.viewer.semantic.symbol_skeleton.*
 
 class Scope(val parent: Scope? = null) {
 	private val symbols = mutableMapOf<String, Symbol>()
@@ -60,6 +53,7 @@ class ScopeBuilder {
 			is DataSymbol -> visitData(symbol)
 			is TraitSymbol -> visitTrait(symbol)
 			is TypealiasSymbol -> visitTypealias(symbol)
+			is EffectSymbol -> visitEffect(symbol)
 			is FunctionSymbol -> visitFunction(symbol)
 			else -> {}
 		}
@@ -102,6 +96,16 @@ class ScopeBuilder {
 	}
 
 	fun visitTypealias(symbol: TypealiasSymbol) {
+		enter()
+
+		symbol.typeParameters.forEach { typeParameter ->
+			declare(typeParameter)
+		}
+
+		exit()
+	}
+
+	fun visitEffect(symbol: EffectSymbol) {
 		enter()
 
 		symbol.typeParameters.forEach { typeParameter ->

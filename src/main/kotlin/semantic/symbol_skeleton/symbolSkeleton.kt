@@ -24,7 +24,7 @@ class SymbolSkeletonVisitor : YurinParserBaseVisitor<Symbol?>() {
 
 	override fun visitDataDeclaration(ctx: YurinParser.DataDeclarationContext): DataSymbol {
 		return DataSymbol.Builder().apply {
-			ctx.modifiers().modifier().forEach { modifier ->
+			ctx.modifier().forEach { modifier ->
 				modifiers += modifier.toModifier()
 			}
 
@@ -40,11 +40,11 @@ class SymbolSkeletonVisitor : YurinParserBaseVisitor<Symbol?>() {
 				typeParameters += visitTypeParameter(typeParameter)
 			}
 
-			ctx.inheritance()?.typeReference()?.forEach { typeReference ->
-				structureExtension += visitTypeReference(typeReference)
+			ctx.typeBinding()?.typeReference()?.forEach { typeReference ->
+				typeBindings += visitTypeReference(typeReference)
 			}
 
-			ctx.classBody()?.declaration()?.forEach { declaration ->
+			ctx.typeBody()?.declaration()?.forEach { declaration ->
 				memberDeclarations += visitDeclaration(declaration)
 			}
 		}.build()
@@ -52,7 +52,7 @@ class SymbolSkeletonVisitor : YurinParserBaseVisitor<Symbol?>() {
 
 	override fun visitTraitDeclaration(ctx: YurinParser.TraitDeclarationContext): TraitSymbol {
 		return TraitSymbol.Builder().apply {
-			ctx.modifiers().modifier().forEach { modifier ->
+			ctx.modifier().forEach { modifier ->
 				modifiers += modifier.toModifier()
 			}
 
@@ -62,11 +62,11 @@ class SymbolSkeletonVisitor : YurinParserBaseVisitor<Symbol?>() {
 				typeParameters += visitTypeParameter(typeParameter)
 			}
 
-			ctx.inheritance()?.typeReference()?.forEach { typeReference ->
-				inheritance += visitTypeReference(typeReference)
+			ctx.typeBinding()?.typeReference()?.forEach { typeReference ->
+				typeBindings += visitTypeReference(typeReference)
 			}
 
-			ctx.classBody()?.declaration()?.forEach { declaration ->
+			ctx.typeBody()?.declaration()?.forEach { declaration ->
 				memberDeclarations += visitDeclaration(declaration)
 			}
 		}.build()
@@ -74,7 +74,7 @@ class SymbolSkeletonVisitor : YurinParserBaseVisitor<Symbol?>() {
 
 	override fun visitTypealiasDeclaration(ctx: YurinParser.TypealiasDeclarationContext): TypealiasSymbol {
 		return TypealiasSymbol.Builder().apply {
-			ctx.modifiers().modifier().forEach { modifier ->
+			ctx.modifier().forEach { modifier ->
 				modifiers += modifier.toModifier()
 			}
 
@@ -88,16 +88,30 @@ class SymbolSkeletonVisitor : YurinParserBaseVisitor<Symbol?>() {
 		}.build()
 	}
 
+	override fun visitEffectDeclaration(ctx: YurinParser.EffectDeclarationContext): EffectSymbol {
+		return EffectSymbol.Builder().apply {
+			ctx.modifier().forEach { modifier ->
+				modifiers += modifier.toModifier()
+			}
+
+			name = ctx.Identifier().text
+
+			ctx.typeParameters()?.typeParameter()?.forEach { typeParameter ->
+				typeParameters += visitTypeParameter(typeParameter)
+			}
+		}.build()
+	}
+
 	override fun visitImplDeclaration(ctx: YurinParser.ImplDeclarationContext): ImplSymbol {
 		return ImplSymbol.Builder().apply {
-			ctx.modifiers().modifier().forEach { modifier ->
+			ctx.modifier().forEach { modifier ->
 				modifiers += modifier.toModifier()
 			}
 
 			dataType = visitTypeReference(ctx.typeReference(0)!!)
 			traitType = visitTypeReference(ctx.typeReference(1)!!)
 
-			ctx.classBody()?.declaration()?.forEach { declaration ->
+			ctx.typeBody()?.declaration()?.forEach { declaration ->
 				memberDeclarations += visitDeclaration(declaration)
 			}
 		}.build()
@@ -105,7 +119,7 @@ class SymbolSkeletonVisitor : YurinParserBaseVisitor<Symbol?>() {
 
 	override fun visitFunctionDeclaration(ctx: YurinParser.FunctionDeclarationContext): FunctionSymbol {
 		return FunctionSymbol.Builder().apply {
-			ctx.modifiers().modifier().forEach { modifier ->
+			ctx.modifier().forEach { modifier ->
 				modifiers += modifier.toModifier()
 			}
 
@@ -126,12 +140,18 @@ class SymbolSkeletonVisitor : YurinParserBaseVisitor<Symbol?>() {
 			ctx.typeReference()?.let { typeReference ->
 				returnType = visitTypeReference(typeReference)
 			}
+
+			ctx.functionEffects()?.let { functionEffects ->
+				functionEffects.typeReference().forEach { typeReference ->
+					effects += visitTypeReference(typeReference)
+				}
+			}
 		}.build()
 	}
 
 	override fun visitPropertyDeclaration(ctx: YurinParser.PropertyDeclarationContext): PropertySymbol {
 		return PropertySymbol.Builder().apply {
-			ctx.modifiers().modifier().forEach { modifier ->
+			ctx.modifier().forEach { modifier ->
 				modifiers += modifier.toModifier()
 			}
 
@@ -144,6 +164,12 @@ class SymbolSkeletonVisitor : YurinParserBaseVisitor<Symbol?>() {
 
 			ctx.typeReference()?.let { typeReference ->
 				returnType = visitTypeReference(typeReference)
+			}
+
+			ctx.functionEffects()?.let { functionEffects ->
+				functionEffects.typeReference().forEach { typeReference ->
+					effects += visitTypeReference(typeReference)
+				}
 			}
 		}.build()
 	}
@@ -190,9 +216,20 @@ class SymbolSkeletonVisitor : YurinParserBaseVisitor<Symbol?>() {
 
 	private fun YurinParser.ModifierContext.toModifier() = when {
 		Open() != null -> Modifier.Open
+		Sealed() != null -> Modifier.Sealed
 		Abstract() != null -> Modifier.Abstract
-		Operator() != null -> Modifier.Operator
 		Singleton() != null -> Modifier.Singleton
+		Operator() != null -> Modifier.Operator
+		Impl() != null -> Modifier.Impl
+		visibilityModifier() != null -> visibilityModifier()!!.toModifier()
+		else -> error("Unknown modifier: $text")
+	}
+
+	private fun YurinParser.VisibilityModifierContext.toModifier() = when {
+		Public() != null -> Modifier.Public
+		Restricted() != null -> Modifier.Restricted
+		Internal() != null -> Modifier.Internal
+		Private() != null -> Modifier.Private
 		else -> error("Unknown modifier: $text")
 	}
 }

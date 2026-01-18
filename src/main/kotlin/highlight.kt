@@ -99,43 +99,49 @@ fun AnnotatedString.Builder.highlightToken(highlight: Highlight) {
 }
 
 private val highlightStyleMap = mapOf(
+	// General
+	Tokens.LineComment to YurinHighlightStyle.lineComment,
+	Tokens.DelimitedComment to YurinHighlightStyle.blockComment,
+	// Keyword
 	Tokens.Package to YurinHighlightStyle.keyword,
 	Tokens.Import to YurinHighlightStyle.keyword,
 	Tokens.Data to YurinHighlightStyle.keyword,
 	Tokens.Trait to YurinHighlightStyle.keyword,
+	Tokens.Typealias to YurinHighlightStyle.keyword,
 	Tokens.Impl to YurinHighlightStyle.keyword,
 	Tokens.Fun to YurinHighlightStyle.keyword,
 	Tokens.Var to YurinHighlightStyle.keyword,
 	Tokens.Val to YurinHighlightStyle.keyword,
+	Tokens.Ref to YurinHighlightStyle.keyword,
 	Tokens.Get to YurinHighlightStyle.keyword,
 	Tokens.Set to YurinHighlightStyle.keyword,
-	Tokens.Typealias to YurinHighlightStyle.keyword,
+	Tokens.This to YurinHighlightStyle.keyword,
+	Tokens.Effect to YurinHighlightStyle.keyword,
 	Tokens.Open to YurinHighlightStyle.keyword,
+	Tokens.Sealed to YurinHighlightStyle.keyword,
 	Tokens.Abstract to YurinHighlightStyle.keyword,
 	Tokens.Operator to YurinHighlightStyle.keyword,
 	Tokens.Singleton to YurinHighlightStyle.keyword,
-	Tokens.Unsafe to YurinHighlightStyle.keyword,
+	Tokens.Exist to YurinHighlightStyle.keyword,
+	Tokens.Private to YurinHighlightStyle.keyword,
+	Tokens.Internal to YurinHighlightStyle.keyword,
+	Tokens.Restricted to YurinHighlightStyle.keyword,
+	Tokens.Public to YurinHighlightStyle.keyword,
 	Tokens.Nothing to YurinHighlightStyle.keyword,
 	Tokens.Dynamic to YurinHighlightStyle.keyword,
+	Tokens.In to YurinHighlightStyle.keyword,
+	Tokens.NotIn to YurinHighlightStyle.keyword,
+	Tokens.Is to YurinHighlightStyle.keyword,
+	Tokens.NotIs to YurinHighlightStyle.keyword,
+	Tokens.As to YurinHighlightStyle.keyword,
+	Tokens.SafeAs to YurinHighlightStyle.keyword,
 	Tokens.If to YurinHighlightStyle.keyword,
 	Tokens.Else to YurinHighlightStyle.keyword,
 	Tokens.Match to YurinHighlightStyle.keyword,
 	Tokens.Return to YurinHighlightStyle.keyword,
 	Tokens.Break to YurinHighlightStyle.keyword,
 	Tokens.Continue to YurinHighlightStyle.keyword,
-	Tokens.Exist to YurinHighlightStyle.keyword,
-	Tokens.This to YurinHighlightStyle.keyword,
-	Tokens.As to YurinHighlightStyle.keyword,
-	Tokens.SafeAs to YurinHighlightStyle.keyword,
-	Tokens.In to YurinHighlightStyle.keyword,
-	Tokens.NotIn to YurinHighlightStyle.keyword,
-	Tokens.Is to YurinHighlightStyle.keyword,
-	Tokens.NotIs to YurinHighlightStyle.keyword,
-
-	Tokens.StringLiteral to YurinHighlightStyle.stringLiteral,
-
-	Tokens.IntLiteral to YurinHighlightStyle.numberLiteral,
-
+	// Punctuation
 	Tokens.Colon to YurinHighlightStyle.colon,
 	Tokens.Dot to YurinHighlightStyle.dot,
 	Tokens.SafeDot to YurinHighlightStyle.safeDot,
@@ -168,19 +174,23 @@ private val highlightStyleMap = mapOf(
 	Tokens.Elvis to YurinHighlightStyle.operator,
 	Tokens.Range to YurinHighlightStyle.operator,
 	Tokens.RangeEq to YurinHighlightStyle.operator,
-
 	Tokens.Arrow to YurinHighlightStyle.arrow,
 	Tokens.Nullable to YurinHighlightStyle.nullableMarker,
 	Tokens.UnsafeCast to YurinHighlightStyle.unsafeCast,
 	Tokens.Reference to YurinHighlightStyle.reference,
 
-	Tokens.SingleLineComment to YurinHighlightStyle.lineComment,
-	Tokens.MultiLineComment to YurinHighlightStyle.blockComment,
+	// Literal
+	Tokens.StringLiteral to YurinHighlightStyle.stringLiteral,
+	Tokens.IntLiteral to YurinHighlightStyle.numberLiteral,
 )
 
 object YurinHighlightStyle {
 	val keyword = HighlightStyle(0xFFC679DD, isItalic = true)
+	val dataDeclaration = HighlightStyle(0xFFE5C17C)
+	val traitDeclaration = HighlightStyle(0xFF98C379)
+	val effectDeclaration = HighlightStyle(0xFF4EC9B0)
 	val functionDeclaration = HighlightStyle(0xFF61AEEF)
+	val propertyDeclaration = HighlightStyle(0xFFE06C75)
 	val functionCall = HighlightStyle(0xFF61AEEF)
 	val namedValueArgument = HighlightStyle(0xFFD19A66)
 	val square = HighlightStyle(0xFFA6B2C0)
@@ -199,9 +209,6 @@ object YurinHighlightStyle {
 	val numberLiteral = HighlightStyle(0xFFD19A66)
 	val blockComment = HighlightStyle(0xFF59626F, isItalic = true)
 	val lineComment = HighlightStyle(0xFF59626F, isItalic = true)
-	val dataDeclaration = HighlightStyle(0xFFE5C17C)
-	val traitDeclaration = HighlightStyle(0xFF98C379)
-	val propertyDeclaration = HighlightStyle(0xFFE06C75)
 
 	val error = HighlightStyle(underlineColor = 0xFFFF0000)
 }

@@ -2,6 +2,8 @@ lexer grammar YurinLexer;
 
 import UnicodeClasses;
 
+// SECTION: keyword
+
 Package
   : 'package'
   ;
@@ -18,12 +20,12 @@ Trait
   : 'trait'
   ;
 
-Impl
-  : 'impl'
+Typealias
+  : 'typealias'
   ;
 
-Colon
-  : ':'
+Impl
+  : 'impl'
   ;
 
 Fun
@@ -50,12 +52,20 @@ Set
   : 'set'
   ;
 
-Typealias
-  : 'typealias'
+This
+  : 'this'
+  ;
+
+Effect
+  : 'effect'
   ;
 
 Open
   : 'open'
+  ;
+
+Sealed
+  : 'sealed'
   ;
 
 Abstract
@@ -70,8 +80,24 @@ Singleton
   : 'singleton'
   ;
 
-Unsafe
-  : 'unsafe'
+Exist
+  : 'exist'
+  ;
+
+Private
+  : 'private'
+  ;
+
+Internal
+  : 'internal'
+  ;
+
+Restricted
+  : 'restricted'
+  ;
+
+Public
+  : 'public'
   ;
 
 Nothing
@@ -80,6 +106,60 @@ Nothing
 
 Dynamic
   : 'dynamic'
+  ;
+
+In
+  : 'in'
+  ;
+
+NotIn
+  : Not In
+  ;
+
+Is
+  : 'is'
+  ;
+
+NotIs
+  : Not Is
+  ;
+
+As
+  : 'as'
+  ;
+
+SafeAs
+  : As Nullable
+  ;
+
+If
+  : 'if'
+  ;
+
+Else
+  : 'else'
+  ;
+
+Match
+  : 'match'
+  ;
+
+Return
+  : 'return'
+  ;
+
+Break
+  : 'break'
+  ;
+
+Continue
+  : 'continue'
+  ;
+
+// SECTION: punctuation
+
+Colon
+  : ':'
   ;
 
 LeftBracket
@@ -116,10 +196,6 @@ RightSquare
 
 Comma
   : ','
-  ;
-
-Exist
-  : 'exist'
   ;
 
 Dot
@@ -182,22 +258,6 @@ LessEq
   : '<='
   ;
 
-In
-  : 'in'
-  ;
-
-NotIn
-  : '!in'
-  ;
-
-Is
-  : 'is'
-  ;
-
-NotIs
-  : '!is'
-  ;
-
 Elvis
   : '?:'
   ;
@@ -230,14 +290,6 @@ Modulo
   : '%'
   ;
 
-As
-  : 'as'
-  ;
-
-SafeAs
-  : 'as?'
-  ;
-
 Increment
   : '++'
   ;
@@ -262,37 +314,11 @@ Reference
   : '::'
   ;
 
-This
-  : 'this'
-  ;
-
-If
-  : 'if'
-  ;
-
-Else
-  : 'else'
-  ;
-
-Match
-  : 'match'
-  ;
-
-Return
-  : 'return'
-  ;
-
-Break
-  : 'break'
-  ;
-
-Continue
-  : 'continue'
-  ;
-
 Arrow
   : '->'
   ;
+
+// SECTION: literal
 
 IntLiteral
   : [0-9]+
@@ -302,21 +328,7 @@ StringLiteral
   : '"' (~["\\] | '\\' .)* '"'
   ;
 
-NL
-  : [\r\n]+
-  ;
-
-WS
-  : [ \t]+ -> channel(HIDDEN)
-  ;
-
-SingleLineComment
-  : '//' ~[\r\n]* -> channel(HIDDEN)
-  ;
-
-MultiLineComment
-  : '/*' .*? '*/' -> channel(HIDDEN)
-  ;
+// SECTION: identifier
 
 Identifier
   : (Letter | '_') (Letter | '_' | UnicodeDigit)*
@@ -332,3 +344,30 @@ fragment Letter
     | UNICODE_CLASS_LM
     | UNICODE_CLASS_LO
     ;
+
+// SECTION: general
+
+NL
+  : '\n' | '\r' '\n'?
+  ;
+
+WS
+  : [\u0020\u0009\u000C]
+    -> channel(HIDDEN)
+  ;
+
+LineComment
+  : '//' ~[\r\n]*
+    -> channel(HIDDEN)
+  ;
+
+DelimitedComment
+  : '/*' ( DelimitedComment | . )*? '*/'
+    -> channel(HIDDEN)
+  ;
+
+fragment Hidden
+  : WS
+  | LineComment
+  | DelimitedComment
+  ;
